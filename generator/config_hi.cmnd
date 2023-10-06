@@ -1,0 +1,32 @@
+### main
+Main:numberOfEvents = 1
+
+### beam
+Beams:eCM = 5022.0                                            # 5.02 TeV
+Beams:idA = 1000822080                                        # lead ion
+Beams:idB = 1000822080                                        # lead ion
+# Beams:frameType = 1                                           # the beams are colliding in their CM frame (ignored!)
+
+### heavy ion
+# HeavyIon:SigFitErr = 0.02,0.02,0.1,0.05,0.05,0.0,0.1,0.0      # fit total and semi-inclusive cross sections within some tolerance (based on main113)
+# HeavyIon:SigFitDefPar = 17.24,2.15,0.33,0.0,0.0,0.0,0.0,0.0   #
+# HeavyIon:SigFitNGen = 20                                      # run for 20 generations to fit the parameters
+HeavyIon:bWidth = 14.48                                       # (from O2DPG/.../pythia8_hi.cfg)
+
+# PhaseSpace:pTHatMin = 20.
+
+### decays
+ParticleDecays:limitTau0 = on                                 # only particles with tau0 < tau0Max are decayed (from cas, caro, O2DPG)
+ParticleDecays:tau0Max = 10.                                  # in mm/c (from cas, caro, O2DPG)
+
+### debug
+# Next:numberShowEvent = 1                                      # list first N events (ignored!)
+# Next:numberShowInfo = 1                                       #
+
+### processes
+# SoftQCD:nonDiffractive = on                                   # (from cas)
+# SoftQCD:inelastic = on                                        # all inelastic processes (from caro)
+
+### seed
+Random:setSeed = on                                           # random seed on (from caro)
+Random:seed = 0                                               # seed based on the computers clock (when 0) (from caro)

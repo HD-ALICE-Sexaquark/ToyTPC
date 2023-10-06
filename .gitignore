@@ -1,0 +1,16 @@
+.vscode/
+reconstruction/G4Setup_build/
+**.old
+bkg_gen/pythia8309_build
+bkg_gen/pythia8309_root
+bkg_gen/pythia8309_src
+**.tgz
+bkg_gen/main_fct
+**.log
+Makefile**
+output/
+**/test/
+set_env.sh
+sim/
+analysis/*.csv
+analysis/*.root

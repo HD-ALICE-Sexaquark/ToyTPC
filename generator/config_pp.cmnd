@@ -1,0 +1,19 @@
+### main
+Main:numberOfEvents = 1
+
+### beam
+Beams:eCM = 13500.0                                           # 13 TeV
+Beams:idA = 2212                                              # proton
+Beams:idB = 2212                                              # proton
+
+### decays
+ParticleDecays:limitTau0 = on                                 # only particles with tau0 < tau0Max are decayed (from cas, caro, O2DPG)
+ParticleDecays:tau0Max = 10.                                  # in mm/c (from cas, caro, O2DPG)
+
+### processes
+# SoftQCD:nonDiffractive = on                                 # (from cas)
+SoftQCD:inelastic = on                                        # all inelastic processes (from caro, O2DPG)
+
+### seed
+Random:setSeed = on                                           # random seed on (from caro)
+Random:seed = 0                                               # seed based on the computers clock (when 0) (from caro)
