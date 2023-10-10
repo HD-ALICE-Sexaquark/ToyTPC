@@ -37,17 +37,12 @@
 
 namespace B2a {
 
-InnerTrackingSystemSD::InnerTrackingSystemSD(const G4String& name, const G4String& hitsCollectionName)
-    : G4VSensitiveDetector(name),  //
-      fHitsCollection(nullptr) {
-    collectionName.insert(hitsCollectionName);
+InnerTrackingSystemSD::InnerTrackingSystemSD(G4String name)  //
+    : G4VSensitiveDetector(name) {
+    collectionName.insert("ITS_hitsCollection");
 }
 
-InnerTrackingSystemSD::~InnerTrackingSystemSD() {
-    //
-    //
-    //
-}
+InnerTrackingSystemSD::~InnerTrackingSystemSD() {}
 
 void InnerTrackingSystemSD::Initialize(G4HCofThisEvent* hce) {
     // Create hits collection
@@ -89,9 +84,9 @@ G4bool InnerTrackingSystemSD::ProcessHits(G4Step* aStep, G4TouchableHistory*) {
 void InnerTrackingSystemSD::EndOfEvent(G4HCofThisEvent*) {
     if (verboseLevel > 1) {
         G4int nofHits = fHitsCollection->entries();
-        // G4cout << G4endl << "-------->Hits Collection: in this event they are " << nofHits << " hits in the tracker chambers: " << G4endl;
-        // for (G4int i = 0; i < nofHits; i++) (*fHitsCollection)[i]->Print();
+        // G4cout << G4endl << "-------->Hits Collection: in this event they are " << nofHits << " hits in the tracker chambers: " <<
+        // G4endl; for (G4int i = 0; i < nofHits; i++) (*fHitsCollection)[i]->Print();
     }
 }
 
-}  // namespace B2
+}  // namespace B2a

@@ -48,7 +48,7 @@ namespace B2a {
 */
 class InnerTrackingSystemSD : public G4VSensitiveDetector {
    public:
-    InnerTrackingSystemSD(const G4String& name, const G4String& hitsCollectionName);
+    InnerTrackingSystemSD(G4String name);
     virtual ~InnerTrackingSystemSD();
 
     // methods from base class

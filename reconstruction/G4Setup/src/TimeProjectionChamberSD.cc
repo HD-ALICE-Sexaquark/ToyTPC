@@ -39,7 +39,10 @@
 
 namespace B2a {
 
-TimeProjectionChamberSD::TimeProjectionChamberSD(G4String name) : G4VSensitiveDetector(name) { collectionName.insert("driftChamberColl"); }
+TimeProjectionChamberSD::TimeProjectionChamberSD(G4String name)  //
+    : G4VSensitiveDetector(name) {
+    collectionName.insert("TPC_hitsCollection");
+}
 
 TimeProjectionChamberSD::~TimeProjectionChamberSD() {}
 

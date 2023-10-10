@@ -47,8 +47,12 @@ class EventAction : public G4UserEventAction {
 
    public:
     void StoreEvent(const G4Event* event);
+
+   private:
+    G4int itsHC_id;
+    G4int tpcHC_id;
 };
 
-}  // namespace B2
+}  // namespace B2a
 
 #endif

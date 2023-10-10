@@ -229,7 +229,7 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes() {
     // Below is an example of how to set tracking constraints in a given logical volume
     // Sets a max step length in the tracker region, with G4StepLimiter
 
-    G4double maxStep = 0.1;  // borquez: should it be the layer thickness?
+    G4double maxStep = 4 * mm;
     fStepLimit = new G4UserLimits(maxStep);
     TPC_LV->SetUserLimits(fStepLimit);
 
@@ -252,13 +252,13 @@ void DetectorConstruction::ConstructSDandField() {
 
     /** ITS **/
 
-    InnerTrackingSystemSD* ITS_SD = new InnerTrackingSystemSD("/ITS_SD", "InnerTrackingSystemHitsCollection");
+    InnerTrackingSystemSD* ITS_SD = new InnerTrackingSystemSD("/ITS");
     G4SDManager::GetSDMpointer()->AddNewDetector(ITS_SD);
     SetSensitiveDetector("Layer_LV", ITS_SD, true);  // apply to all LVs named "Layer_LV"
 
     /** TPC **/
 
-    TimeProjectionChamberSD* TPC_SD = new TimeProjectionChamberSD("/TPC_SD");
+    TimeProjectionChamberSD* TPC_SD = new TimeProjectionChamberSD("/TPC");
     G4SDManager::GetSDMpointer()->AddNewDetector(TPC_SD);
     SetSensitiveDetector("TPC_LV", TPC_SD);
 
