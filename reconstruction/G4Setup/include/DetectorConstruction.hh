@@ -65,7 +65,8 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
 
     static G4ThreadLocal G4GlobalMagFieldMessenger* fMagFieldMessenger;
 
-    G4UserLimits* fStepLimit = nullptr;  // pointer to user step limits
+    G4UserLimits* fStepLimit_ITS = nullptr;  // pointer to user step limits
+    G4UserLimits* fStepLimit_TPC = nullptr;  // pointer to user step limits
 
     DetectorMessenger* fMessenger = nullptr;  // messenger
 

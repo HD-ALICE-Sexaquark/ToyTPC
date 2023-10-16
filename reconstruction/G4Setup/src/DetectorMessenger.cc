@@ -33,7 +33,9 @@
 #include "G4UIdirectory.hh"
 
 extern std::string input_file;
-extern std::string output_file;
+extern std::string traj_file;
+extern std::string its_file;
+extern std::string tpc_file;
 
 namespace B2a {
 
@@ -47,15 +49,27 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det) : fDetectorConst
     fInputFileCmd->SetParameterName("filename", false);
     fInputFileCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
-    fOutputFileCmd = new G4UIcmdWithAString("/ALICE/output_file", this);
-    fOutputFileCmd->SetGuidance("Select output file");
-    fOutputFileCmd->SetParameterName("filename", false);
-    fOutputFileCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+    fTrajFileCmd = new G4UIcmdWithAString("/ALICE/traj_file", this);
+    fTrajFileCmd->SetGuidance("Select output filename for trajectories info");
+    fTrajFileCmd->SetParameterName("filename", false);
+    fTrajFileCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+    fITSFileCmd = new G4UIcmdWithAString("/ALICE/its_file", this);
+    fITSFileCmd->SetGuidance("Select output filename for ITS info");
+    fITSFileCmd->SetParameterName("filename", false);
+    fITSFileCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+    fTPCFileCmd = new G4UIcmdWithAString("/ALICE/tpc_file", this);
+    fTPCFileCmd->SetGuidance("Select output filename for TPC info");
+    fTPCFileCmd->SetParameterName("filename", false);
+    fTPCFileCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 DetectorMessenger::~DetectorMessenger() {
     delete fInputFileCmd;
-    delete fOutputFileCmd;
+    delete fTrajFileCmd;
+    delete fITSFileCmd;
+    delete fTPCFileCmd;
     delete fALICE;
 }
 
@@ -64,8 +78,14 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue) {
     if (command == fInputFileCmd) {
         input_file = newValue;
     }
-    if (command == fOutputFileCmd) {
-        output_file = newValue;
+    if (command == fTrajFileCmd) {
+        traj_file = newValue;
+    }
+    if (command == fITSFileCmd) {
+        its_file = newValue;
+    }
+    if (command == fTPCFileCmd) {
+        tpc_file = newValue;
     }
 }
 

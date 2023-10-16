@@ -38,7 +38,9 @@
 #include "G4TrajectoryContainer.hh"
 #include "G4ios.hh"
 
-extern std::string output_file;
+extern std::string traj_file;
+extern std::string its_file;
+extern std::string tpc_file;
 
 namespace {
 
@@ -98,192 +100,197 @@ void EventAction::EndOfEventAction(const G4Event* event) {
     G4int eventID = event->GetEventID();
     G4cout << "> Event " << eventID << G4endl;
 
-    /* Trajectories */
+    /* Debug --Trajectories */
 
     G4TrajectoryContainer* trajectoryContainer = event->GetTrajectoryContainer();
     G4int n_trajectories = 0;
     if (trajectoryContainer) n_trajectories = trajectoryContainer->entries();
     G4cout << "  >> N Trajectories: " << n_trajectories << G4endl;
+    /*
+        for (G4int i = 0; i < n_trajectories; i++) {
+            G4cout << "     >> Trajectory " << i                               //
+                   << ", Track " << (*trajectoryContainer)[i]->GetTrackID()    //
+                   << ", Parent " << (*trajectoryContainer)[i]->GetParentID()  //
+                   << ", PDG " << (*trajectoryContainer)[i]->GetPDGEncoding()  //
+                   << ", Charge " << (G4int)(*trajectoryContainer)[i]->GetCharge() << G4endl;
+        }
+    */
 
-    // debug
-    for (G4int i = 0; i < n_trajectories; i++) {
-        G4cout << "     >> Trajectory " << i                               //
-               << ", Track " << (*trajectoryContainer)[i]->GetTrackID()    //
-               << ", Parent " << (*trajectoryContainer)[i]->GetParentID()  //
-               << ", PDG " << (*trajectoryContainer)[i]->GetPDGEncoding()  //
-               << ", Charge " << (G4int)(*trajectoryContainer)[i]->GetCharge() << G4endl;
-    }
-
-    /* ITS Hits */
+    /* Debug -- ITS Hits */
 
     G4VHitsCollection* itsHC = GetHC(event, itsHC_id);
     G4int n_its_hits = 0;
     if (itsHC) n_its_hits = itsHC->GetSize();
     G4cout << "  >> N ITS Hits: " << n_its_hits << G4endl;
+    /*
+        InnerTrackingSystemHit* its_hit = nullptr;
+        for (G4int i = 0; i < n_its_hits; i++) {
+            its_hit = (InnerTrackingSystemHit*)itsHC->GetHit(i);
+            G4cout << "     >> Hit " << i                  //
+                   << ", Track " << its_hit->GetTrackID()  //
+                   << ", Layer " << its_hit->GetLayerNb() << G4endl;
+        }
+    */
 
-    // declare maps, key = track ID
-    // std::map<G4int, G4int> NHits;       // number of hits of a track
-    // std::map<G4int, G4String> Process;  // creation process
-
-    InnerTrackingSystemHit* its_h = nullptr;
-    for (G4int i = 0; i < n_its_hits; i++) {
-        its_h = (InnerTrackingSystemHit*)itsHC->GetHit(i);
-        G4cout << "     >> Hit " << i                //
-               << ", Track " << its_h->GetTrackID()  //
-               << ", Layer " << its_h->GetChamberNb() << G4endl;
-    }
-
-    /* TPC Hits */
+    /* Debug -- TPC Hits */
 
     G4VHitsCollection* tpcHC = GetHC(event, tpcHC_id);
     G4int n_tpc_hits = 0;
     if (tpcHC) n_tpc_hits = tpcHC->GetSize();
     G4cout << "  >> N TPC Hits: " << n_tpc_hits << G4endl;
-
-    TimeProjectionChamberHit* tpc_h = nullptr;
-    for (G4int i = 0; i < n_tpc_hits; i++) {
-        tpc_h = (TimeProjectionChamberHit*)tpcHC->GetHit(i);
-        G4cout << "     >> Hit " << i                //
-               << ", Layer " << tpc_h->GetLayerID()  //
-               << ", Time " << tpc_h->GetTime() << G4endl;
-    }
+    /*
+        TimeProjectionChamberHit* tpc_hit = nullptr;
+        for (G4int i = 0; i < n_tpc_hits; i++) {
+            tpc_hit = (TimeProjectionChamberHit*)tpcHC->GetHit(i);
+            G4cout << "     >> Hit " << i                  //
+                   << ", Track " << tpc_hit->GetTrackID()  //
+                   << ", Time " << tpc_hit->GetTime() << G4endl;
+        }
+    */
 
     // there's no trigger condition
-    // StoreEvent(event);
+    StoreEvent(event);
     eventManager->KeepTheCurrentEvent();
 }
 
 /*
- Store event info into a .CSV file
+ Store event info into .CSV files
  */
 void EventAction::StoreEvent(const G4Event* event) {
 
-    G4String fOutputFilename = "../output_e" + std::to_string(event->GetEventID()) + ".csv";  // default test value
-    if (output_file != "") fOutputFilename = output_file;
+    G4int eventID = event->GetEventID();
 
-    std::ofstream fOutputFile;
-    fOutputFile.open(fOutputFilename);
+    /* Trajectories */
 
-    // get trajectories
+    G4String fTrajectoriesFilename = "../event" + std::to_string(eventID) + "_traj.csv";  // default test value
+    if (traj_file != "") fTrajectoriesFilename = traj_file;
+
+    std::ofstream fTrajectoriesFile;
+    fTrajectoriesFile.open(fTrajectoriesFilename);
+
     G4TrajectoryContainer* trajectoryContainer = event->GetTrajectoryContainer();
     G4int n_trajectories = 0;
     if (trajectoryContainer) n_trajectories = trajectoryContainer->entries();
 
-    // map trajectories info to trackID
-    std::map<G4int, G4int> PdgCode;
-    std::map<G4int, G4ThreeVector> InitialMomentum;
-    std::map<G4int, G4ThreeVector> InitialPosition;
-    std::map<G4int, G4int> MotherID;
-    std::map<G4int, G4bool> IsPrimary;
-    std::map<G4int, G4bool> IsSignal;
+    G4int traj_trackID;
+    G4long traj_PDGcode;
+    G4ThreeVector traj_position;
+    G4double traj_x_ini, traj_y_ini, traj_z_ini;
+    G4ThreeVector traj_momentum;
+    G4double traj_px_ini, traj_py_ini, traj_pz_ini;
+    G4int traj_parentID;
+    G4int traj_charge;
 
     for (G4int i = 0; i < n_trajectories; i++) {
 
-        G4int trackID = (*trajectoryContainer)[i]->GetTrackID();
-        PdgCode[trackID] = (*trajectoryContainer)[i]->GetPDGEncoding();
-        InitialPosition[trackID] = (*trajectoryContainer)[i]->GetPoint(0)->GetPosition();
-        InitialMomentum[trackID] = (*trajectoryContainer)[i]->GetInitialMomentum();
-        MotherID[trackID] = (*trajectoryContainer)[i]->GetParentID();
-        IsPrimary[trackID] = MotherID[trackID] == 0;
-        G4bool is_secondary = InitialPosition[trackID].x() != 0. &&  //
-                              InitialPosition[trackID].y() != 0. &&  //
-                              InitialPosition[trackID].z() != 0.;
-        G4bool is_signal = IsPrimary[trackID] &&                                      //
-                           (PdgCode[trackID] == 310 || PdgCode[trackID] == -3122) &&  //
-                           is_secondary;
-        G4bool is_mother_secondary = InitialPosition[MotherID[trackID]].x() != 0. &&  //
-                                     InitialPosition[MotherID[trackID]].y() != 0. &&  //
-                                     InitialPosition[MotherID[trackID]].z() != 0.;
-        G4bool is_mother_signal = IsPrimary[MotherID[trackID]] &&                                                //
-                                  (PdgCode[MotherID[trackID]] == 310 || PdgCode[MotherID[trackID]] == -3122) &&  //
-                                  is_mother_secondary;
-        IsSignal[trackID] = is_signal || is_mother_signal;
+        traj_trackID = (*trajectoryContainer)[i]->GetTrackID();
+        traj_PDGcode = (G4long)(*trajectoryContainer)[i]->GetPDGEncoding();
+        traj_position = (*trajectoryContainer)[i]->GetPoint(0)->GetPosition();
+        traj_x_ini = traj_position.x();
+        traj_y_ini = traj_position.y();
+        traj_z_ini = traj_position.z();
+        traj_momentum = (*trajectoryContainer)[i]->GetInitialMomentum();
+        traj_px_ini = traj_momentum.x();
+        traj_py_ini = traj_momentum.y();
+        traj_pz_ini = traj_momentum.z();
+        traj_parentID = (*trajectoryContainer)[i]->GetParentID();
+        traj_charge = (G4int)(*trajectoryContainer)[i]->GetCharge();
+
+        fTrajectoriesFile << eventID << "," << traj_trackID << "," << traj_PDGcode << ","                      //
+                          << traj_x_ini / cm << "," << traj_y_ini / cm << "," << traj_z_ini / cm << ","        //
+                          << traj_px_ini / MeV << "," << traj_py_ini / MeV << "," << traj_pz_ini / MeV << ","  //
+                          << traj_parentID << "," << traj_charge << G4endl;
     }
 
-    // declare columns
-    G4int csv_eventID;
-    G4int csv_trackID;
-    G4int csv_chamberNb;
-    G4double csv_PDGcode;
-    G4double csv_x;
-    G4double csv_y;
-    G4double csv_z;
-    G4double csv_px;
-    G4double csv_py;
-    G4double csv_pz;
-    G4double csv_x_ini;
-    G4double csv_y_ini;
-    G4double csv_z_ini;
-    G4double csv_px_ini;
-    G4double csv_py_ini;
-    G4double csv_pz_ini;
-    G4double csv_Edep;
-    G4String csv_process;
-    G4bool csv_issignal;
+    fTrajectoriesFile.close();
 
-    G4int csv_motherID;
-    G4int csv_mother_PDGcode;
-    G4bool csv_mother_issignal;
-    G4double csv_mother_x;
-    G4double csv_mother_y;
-    G4double csv_mother_z;
-    G4double csv_mother_px;
-    G4double csv_mother_py;
-    G4double csv_mother_pz;
+    /* ITS Hits */
 
-    // loop over hits
+    G4String fITSFilename = "../event" + std::to_string(eventID) + "_its.csv";  // default test value
+    if (its_file != "") fITSFilename = its_file;
 
-    G4VHitsCollection* hc = event->GetHCofThisEvent()->GetHC(0);
-    G4int n_hits = hc->GetSize();
+    std::ofstream fITSFile;
+    fITSFile.open(fITSFilename);
 
-    for (G4int i = 0; i < n_hits; i++) {
+    G4VHitsCollection* itsHC = GetHC(event, itsHC_id);
+    G4int n_its_hits = 0;
+    if (itsHC) n_its_hits = itsHC->GetSize();
 
-        InnerTrackingSystemHit* th = (InnerTrackingSystemHit*)hc->GetHit(i);
+    InnerTrackingSystemHit* its_hit = nullptr;
+    G4int its_trackID;
+    G4int its_layer_n;
+    G4ThreeVector its_position;
+    G4double its_x, its_y, its_z;
+    G4double its_dedx;
+    G4String its_process;
 
-        csv_eventID = event->GetEventID();
-        csv_trackID = th->GetTrackID();
-        csv_chamberNb = th->GetChamberNb();
+    for (G4int i = 0; i < n_its_hits; i++) {
 
-        csv_PDGcode = PdgCode[csv_trackID];
-        csv_x = th->GetPosition().x();
-        csv_y = th->GetPosition().y();
-        csv_z = th->GetPosition().z();
-        csv_px = th->GetMomentum().x();
-        csv_py = th->GetMomentum().y();
-        csv_pz = th->GetMomentum().z();
-        csv_x_ini = InitialPosition[csv_trackID].x();
-        csv_y_ini = InitialPosition[csv_trackID].y();
-        csv_z_ini = InitialPosition[csv_trackID].z();
-        csv_px_ini = InitialMomentum[csv_trackID].x();
-        csv_py_ini = InitialMomentum[csv_trackID].y();
-        csv_pz_ini = InitialMomentum[csv_trackID].z();
-        csv_Edep = th->GetEdep();
-        csv_process = th->GetProcess();
-        csv_issignal = IsSignal[csv_trackID];
+        its_hit = (InnerTrackingSystemHit*)itsHC->GetHit(i);
 
-        csv_motherID = MotherID[csv_trackID];
-        csv_mother_PDGcode = PdgCode[csv_motherID];
-        csv_mother_issignal = IsSignal[csv_motherID];
-        csv_mother_x = InitialPosition[csv_motherID].x();
-        csv_mother_y = InitialPosition[csv_motherID].y();
-        csv_mother_z = InitialPosition[csv_motherID].z();
-        csv_mother_px = InitialMomentum[csv_motherID].x();
-        csv_mother_py = InitialMomentum[csv_motherID].y();
-        csv_mother_pz = InitialMomentum[csv_motherID].z();
+        its_trackID = its_hit->GetTrackID();
+        its_layer_n = its_hit->GetLayerNb();
+        its_position = its_hit->GetPosition();
+        its_x = its_position.x();
+        its_y = its_position.y();
+        its_z = its_position.z();
+        its_dedx = its_hit->GetEdep();
+        its_process = its_hit->GetProcess();
 
-        // (output)
-        fOutputFile << csv_eventID << "," << csv_trackID << "," << csv_chamberNb << ","                               //
-                    << (G4long)csv_PDGcode << "," << csv_x / cm << "," << csv_y / cm << "," << csv_z / cm << ","      //
-                    << csv_px / GeV << "," << csv_py / GeV << "," << csv_pz / GeV << ","                              //
-                    << csv_x_ini / cm << "," << csv_y_ini / cm << "," << csv_z_ini / cm << ","                        //
-                    << csv_px_ini / GeV << "," << csv_py_ini / GeV << "," << csv_pz_ini / GeV << ","                  //
-                    << csv_Edep / GeV << "," << csv_process << "," << (G4int)csv_issignal << ","                      //
-                    << csv_motherID << "," << (G4long)csv_mother_PDGcode << "," << (G4int)csv_mother_issignal << ","  //
-                    << csv_mother_x / cm << "," << csv_mother_y / cm << "," << csv_mother_z / cm << ","               //
-                    << csv_mother_px / GeV << "," << csv_mother_py / GeV << "," << csv_mother_pz / GeV << G4endl;
+        fITSFile << eventID << "," << its_trackID << "," << its_layer_n << ","   //
+                 << its_x / cm << "," << its_y / cm << "," << its_z / cm << ","  //
+                 << its_dedx / MeV << "," << its_process << G4endl;
     }
 
-    fOutputFile.close();
+    fITSFile.close();
+
+    /* TPC Hits */
+
+    G4String fTPCFilename = "../event" + std::to_string(eventID) + "_tpc.csv";  // default test value
+    if (tpc_file != "") fTPCFilename = tpc_file;
+
+    std::ofstream fTPCFile;
+    fTPCFile.open(fTPCFilename);
+
+    G4VHitsCollection* tpcHC = GetHC(event, tpcHC_id);
+    G4int n_tpc_hits = 0;
+    if (tpcHC) n_tpc_hits = tpcHC->GetSize();
+
+    TimeProjectionChamberHit* tpc_hit = nullptr;
+
+    G4int tpc_trackID;
+    G4ThreeVector tpc_position;
+    G4double tpc_x, tpc_y, tpc_z;
+    G4ThreeVector tpc_momentum;
+    G4double tpc_px, tpc_py, tpc_pz;
+    G4double tpc_time;
+    G4double tpc_dedx;
+    G4String tpc_process;
+
+    for (G4int i = 0; i < n_tpc_hits; i++) {
+
+        tpc_hit = (TimeProjectionChamberHit*)tpcHC->GetHit(i);
+
+        tpc_trackID = tpc_hit->GetTrackID();
+        tpc_position = tpc_hit->GetWorldPos();
+        tpc_x = tpc_position.x();
+        tpc_y = tpc_position.y();
+        tpc_z = tpc_position.z();
+        tpc_momentum = tpc_hit->GetMomentum();
+        tpc_px = tpc_momentum.x();
+        tpc_py = tpc_momentum.y();
+        tpc_pz = tpc_momentum.z();
+        tpc_time = tpc_hit->GetTime();
+        tpc_dedx = tpc_hit->GetEdep();
+        tpc_process = tpc_hit->GetProcess();
+
+        fTPCFile << eventID << "," << tpc_trackID << ","                               //
+                 << tpc_x / cm << "," << tpc_y / cm << "," << tpc_z / cm << ","        //
+                 << tpc_px / MeV << "," << tpc_py / MeV << "," << tpc_pz / MeV << ","  //
+                 << tpc_time / nanosecond << "," << tpc_dedx / MeV << "," << tpc_process << G4endl;
+    }
+
+    fTPCFile.close();
 }
 
 }  // namespace B2a

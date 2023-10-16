@@ -53,7 +53,9 @@ class DetectorMessenger : public G4UImessenger {
     G4UIdirectory* fALICE = nullptr;
 
     G4UIcmdWithAString* fInputFileCmd = nullptr;
-    G4UIcmdWithAString* fOutputFileCmd = nullptr;
+    G4UIcmdWithAString* fTrajFileCmd = nullptr;
+    G4UIcmdWithAString* fITSFileCmd = nullptr;
+    G4UIcmdWithAString* fTPCFileCmd = nullptr;
 };
 
 }  // namespace B2a

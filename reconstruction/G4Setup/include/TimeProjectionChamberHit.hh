@@ -68,6 +68,18 @@ class TimeProjectionChamberHit : public G4VHit {
     std::vector<G4AttValue>* CreateAttValues() const override;
     void Print() override;
 
+    void SetTrackID(G4int track) { fTrackID = track; };
+    G4int GetTrackID() const { return fTrackID; };
+
+    void SetMomentum(G4ThreeVector pxpypz) { fMomentum = pxpypz; };
+    G4ThreeVector GetMomentum() const { return fMomentum; };
+
+    void SetEdep(G4double energy) { fEdep = energy; };
+    G4double GetEdep() const { return fEdep; };
+
+    void SetProcess(G4String process) { fProcess = process; };
+    G4String GetProcess() const { return fProcess; };
+
     void SetLayerID(G4int z) { fLayerID = z; }
     G4int GetLayerID() const { return fLayerID; }
 
@@ -81,6 +93,10 @@ class TimeProjectionChamberHit : public G4VHit {
     G4ThreeVector GetWorldPos() const { return fWorldPos; }
 
    private:
+    G4int fTrackID;
+    G4ThreeVector fMomentum;
+    G4double fEdep;
+    G4String fProcess;
     G4int fLayerID = -1;
     G4double fTime = 0.;
     G4ThreeVector fLocalPos;

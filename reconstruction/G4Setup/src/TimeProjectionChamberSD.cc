@@ -35,6 +35,7 @@
 #include "G4Step.hh"
 #include "G4TouchableHistory.hh"
 #include "G4Track.hh"
+#include "G4VProcess.hh"
 #include "G4ios.hh"
 
 namespace B2a {
@@ -69,6 +70,17 @@ G4bool TimeProjectionChamberSD::ProcessHits(G4Step* step, G4TouchableHistory*) {
     auto localPos = touchable->GetHistory()->GetTopTransform().TransformPoint(worldPos);
 
     auto hit = new TimeProjectionChamberHit(copyNo);
+    hit->SetTrackID(step->GetTrack()->GetTrackID());
+    hit->SetMomentum(step->GetPostStepPoint()->GetMomentum());
+    hit->SetEdep(step->GetTotalEnergyDeposit());
+
+    const G4VProcess* process = step->GetTrack()->GetCreatorProcess();
+    if (process) {
+        hit->SetProcess(process->GetProcessName());
+    } else {
+        hit->SetProcess("Unknown");
+    }
+
     hit->SetWorldPos(worldPos);
     hit->SetLocalPos(localPos);
     hit->SetTime(preStepPoint->GetGlobalTime());

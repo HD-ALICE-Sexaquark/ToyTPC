@@ -39,9 +39,9 @@ namespace B2a {
 
 /*
  Tracker hit class
- It defines data members to store the trackID, chamberNb, energy deposit, momentum
+ It defines data members to store the trackID, LayerNb, energy deposit, momentum
  and position of charged particles in a selected volume:
- - fTrackID, fChamberNB, fEdep, fMom, fPosition, fProcess
+ - fTrackID, fLayerNB, fEdep, fMom, fPosition, fProcess
 */
 class InnerTrackingSystemHit : public G4VHit {
    public:
@@ -62,7 +62,7 @@ class InnerTrackingSystemHit : public G4VHit {
 
     // Set methods
     void SetTrackID(G4int track) { fTrackID = track; };
-    void SetChamberNb(G4int chamb) { fChamberNb = chamb; };
+    void SetLayerNb(G4int chamb) { fLayerNb = chamb; };
     void SetMomentum(G4ThreeVector pxpypz) { fMomentum = pxpypz; };
     void SetEdep(G4double de) { fEdep = de; };
     void SetPosition(G4ThreeVector xyz) { fPosition = xyz; };
@@ -70,7 +70,7 @@ class InnerTrackingSystemHit : public G4VHit {
 
     // Get methods
     G4int GetTrackID() const { return fTrackID; };
-    G4int GetChamberNb() const { return fChamberNb; };
+    G4int GetLayerNb() const { return fLayerNb; };
     G4ThreeVector GetMomentum() const { return fMomentum; };
     G4double GetEdep() const { return fEdep; };
     G4ThreeVector GetPosition() const { return fPosition; };
@@ -78,7 +78,7 @@ class InnerTrackingSystemHit : public G4VHit {
 
    private:
     G4int fTrackID;
-    G4int fChamberNb;
+    G4int fLayerNb;
     G4ThreeVector fMomentum;
     G4double fEdep;
     G4ThreeVector fPosition;

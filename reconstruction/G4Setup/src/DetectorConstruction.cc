@@ -61,7 +61,8 @@ G4ThreadLocal G4GlobalMagFieldMessenger* DetectorConstruction::fMagFieldMessenge
 DetectorConstruction::DetectorConstruction() { fMessenger = new DetectorMessenger(this); }
 
 DetectorConstruction::~DetectorConstruction() {
-    delete fStepLimit;
+    delete fStepLimit_ITS;
+    delete fStepLimit_TPC;
     delete fMessenger;
 }
 
@@ -142,9 +143,9 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes() {
     /*** ALICE ITS ***/
 
     // define an chamber of air inside the TPC, where the ITS will be located
-    /*
-    G4double chamberLength = 500. * cm;
-    G4double chamberRadius = 78.8 * cm;
+    // it's useful to define step limits for the ITS
+    G4double chamberLength = 1475. * mm;
+    G4double chamberRadius = 394.9 * mm;
 
     G4Tubs* Chamber_S = new G4Tubs("Chamber", 0., chamberRadius, 0.5 * chamberLength, 0. * deg, 360. * deg);
     G4LogicalVolume* Chamber_LV = new G4LogicalVolume(Chamber_S, Air, "Chamber", nullptr, nullptr, nullptr);
@@ -157,7 +158,6 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes() {
                       false,                      // no boolean operations
                       0,                          // copy number
                       fCheckOverlaps);            // checking overlaps
-    */
 
     // [taken from Table 1.1 of the TDR of the ITS Upgrade]
     const G4int NLayersITS = 7;
@@ -191,11 +191,18 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes() {
                           G4ThreeVector(0., 0., 0.),                  // (x,y,z) w.r.t. mother's volume center
                           Layer_LV[layerNo],                          // its logical volume
                           "Layer" + std::to_string(layerNo) + "_PV",  // its name
-                          World_LV,                                   // its mother volume
+                          Chamber_LV,                                 // its mother volume
                           false,                                      // no boolean operations
                           layerNo,                                    // copy number
                           fCheckOverlaps);                            // checking overlaps
     }
+
+    // set max step length
+    /*
+    G4double maxStep_ITS = 10. * layerThickness;
+    fStepLimit_ITS = new G4UserLimits(maxStep_ITS);
+    Chamber_LV->SetUserLimits(fStepLimit_ITS);
+    */
 
     /*** ALICE TPC ***/
 
@@ -216,6 +223,11 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes() {
                       0,                          // copy number
                       fCheckOverlaps);            // checking overlaps
 
+    // set max step length
+    G4double maxStep_TPC = 4 * mm;
+    fStepLimit_TPC = new G4UserLimits(maxStep_TPC);
+    TPC_LV->SetUserLimits(fStepLimit_TPC);
+
     /*** Visualization Attributes ***/
 
     G4VisAttributes* boxVisAtt = new G4VisAttributes(G4Colour(1.0, 1.0, 1.0));    // white
@@ -225,13 +237,6 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes() {
     World_LV->SetVisAttributes(boxVisAtt);
     for (G4int layerNo = 0; layerNo < NLayersITS; layerNo++) Layer_LV[layerNo]->SetVisAttributes(layerVisAtt);
     TPC_LV->SetVisAttributes(tpcVisAtt);
-
-    // Below is an example of how to set tracking constraints in a given logical volume
-    // Sets a max step length in the tracker region, with G4StepLimiter
-
-    G4double maxStep = 4 * mm;
-    fStepLimit = new G4UserLimits(maxStep);
-    TPC_LV->SetUserLimits(fStepLimit);
 
     /// Set additional contraints on the track, with G4UserSpecialCuts
     ///
@@ -273,7 +278,7 @@ void DetectorConstruction::ConstructSDandField() {
 }
 
 void DetectorConstruction::SetMaxStep(G4double maxStep) {
-    if ((fStepLimit) && (maxStep > 0.)) fStepLimit->SetMaxAllowedStep(maxStep);
+    if (fStepLimit_ITS && maxStep > 0.) fStepLimit_ITS->SetMaxAllowedStep(maxStep);
 }
 
 void DetectorConstruction::SetCheckOverlaps(G4bool checkOverlaps) { fCheckOverlaps = checkOverlaps; }

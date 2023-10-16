@@ -47,7 +47,9 @@
 // global variables
 // (bad practice, but who cares at this point)
 std::string input_file = "";
-std::string output_file = "";
+std::string traj_file = "";
+std::string its_file = "";
+std::string tpc_file = "";
 
 int main(int argc, char** argv) {
 
@@ -55,20 +57,23 @@ int main(int argc, char** argv) {
 
     G4UIExecutive* ui = nullptr;
 
-    G4String inputFileName;
-    G4String outputFileName;
-    G4String nProcesses;
+    G4String input_filename;
+    G4String output_filename_traj;
+    G4String output_filename_ITS;
+    G4String output_filename_TPC;
 
     if (argc == 1) {
         ui = new G4UIExecutive(argc, argv);
-    } else if (argc == 4) {
-        inputFileName = argv[1];
-        outputFileName = argv[2];
-        nProcesses = argv[3];
+    } else if (argc == 5) {
+        input_filename = argv[1];
+        output_filename_traj = argv[2];
+        output_filename_ITS = argv[3];
+        output_filename_TPC = argv[4];
     } else {
         G4cerr << "main.cc :: ERROR: incorrect number of arguments." << G4endl;
-        G4cerr << "main.cc ::        -> for command-line mode, you need exactly 3 arguments:" << G4endl;
-        G4cerr << "main.cc ::           ./main <input_file> <output_file> <n_threads>" << G4endl;
+        G4cerr << "main.cc ::        -> for command-line mode, you need exactly one argument:" << G4endl;
+        G4cerr << "main.cc ::           ./main <input_filename> <output_filename_traj> <output_filename_ITS> <output_filename_TPC>"
+               << G4endl;
         G4cerr << "main.cc ::        -> for graphic-interactive mode, you need no arguments:" << G4endl;
         G4cerr << "main.cc ::           ./main" << G4endl;
         return 1;
@@ -76,11 +81,12 @@ int main(int argc, char** argv) {
 
     // (debug)
     G4cout << "main.cc :: initiating..." << G4endl;
-    G4cout << "main.cc :: >> inputFileName  = " << inputFileName << G4endl;
-    G4cout << "main.cc :: >> outputFileName = " << outputFileName << G4endl;
-    G4cout << "main.cc :: >> nProcesses     = " << nProcesses << G4endl;
+    G4cout << "main.cc :: >> input_filename       = " << input_filename << G4endl;
+    G4cout << "main.cc :: >> output_filename_traj = " << output_filename_traj << G4endl;
+    G4cout << "main.cc :: >> output_filename_ITS  = " << output_filename_ITS << G4endl;
+    G4cout << "main.cc :: >> output_filename_TPC  = " << output_filename_TPC << G4endl;
 
-    // Optionally: choose a different Random engine...
+    // optional: choose a different random engine...
     // G4Random::setTheEngine(new CLHEP::MTwistEngine);
 
     // use G4SteppingVerboseWithUnits
@@ -113,13 +119,14 @@ int main(int argc, char** argv) {
     // Process macro or start UI session
     if (!ui) {
         // batch mode
-        UImanager->ApplyCommand("/ALICE/input_file " + inputFileName);
-        UImanager->ApplyCommand("/ALICE/output_file " + outputFileName);
-        UImanager->ApplyCommand("/run/numberOfThreads " + nProcesses);
+        UImanager->ApplyCommand("/ALICE/input_file " + input_filename);
+        UImanager->ApplyCommand("/ALICE/traj_file " + output_filename_traj);
+        UImanager->ApplyCommand("/ALICE/its_file " + output_filename_ITS);
+        UImanager->ApplyCommand("/ALICE/tpc_file " + output_filename_TPC);
         UImanager->ApplyCommand("/run/initialize");  // G4RunManager::Initialize().
         UImanager->ApplyCommand("/tracking/verbose 0");
         UImanager->ApplyCommand("/tracking/storeTrajectory 2");  // IMPORTANT!!
-        UImanager->ApplyCommand("/run/beamOn " + nProcesses);
+        UImanager->ApplyCommand("/run/beamOn 1");
     } else {
         // graphical mode
         UImanager->ApplyCommand("/control/execute init_vis.mac");

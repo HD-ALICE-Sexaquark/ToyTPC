@@ -43,45 +43,26 @@ G4ThreadLocal G4Allocator<InnerTrackingSystemHit>* InnerTrackingSystemHitAllocat
 InnerTrackingSystemHit::InnerTrackingSystemHit()
     : G4VHit(),  //
       fTrackID(-1),
-      fChamberNb(-1),
+      fLayerNb(-1),
       fMomentum(G4ThreeVector()),
       fEdep(0.),
       fPosition(G4ThreeVector()),
-      fProcess() {
-    //
-    //
-    //
-}
+      fProcess() {}
 
-InnerTrackingSystemHit::~InnerTrackingSystemHit() {
-    //
-    //
-    //
-}
+InnerTrackingSystemHit::~InnerTrackingSystemHit() {}
 
 InnerTrackingSystemHit::InnerTrackingSystemHit(const InnerTrackingSystemHit& right) : G4VHit() {
-    //
-    //
-    //
     fTrackID = right.fTrackID;
-    fChamberNb = right.fChamberNb;
+    fLayerNb = right.fLayerNb;
     fMomentum = right.fMomentum;
     fEdep = right.fEdep;
     fPosition = right.fPosition;
     fProcess = right.fProcess;
 }
 
-G4bool InnerTrackingSystemHit::operator==(const InnerTrackingSystemHit& right) const {
-    //
-    //
-    //
-    return (this == &right) ? true : false;
-}
+G4bool InnerTrackingSystemHit::operator==(const InnerTrackingSystemHit& right) const { return (this == &right) ? true : false; }
 
 void InnerTrackingSystemHit::Draw() {
-    //
-    //
-    //
     G4VVisManager* pVVisManager = G4VVisManager::GetConcreteInstance();
     if (pVVisManager) {
         G4Circle circle(fPosition);
@@ -95,10 +76,7 @@ void InnerTrackingSystemHit::Draw() {
 }
 
 void InnerTrackingSystemHit::Print() {
-    //
-    //
-    //
-    G4cout << "InnerTrackingSystemHit :: track_id: " << fTrackID << ", chamber_nb: " << fChamberNb << ", edep: " << fEdep
+    G4cout << "InnerTrackingSystemHit :: track_id: " << fTrackID << ", chamber_nb: " << fLayerNb << ", edep: " << fEdep
            << ", process: " << fProcess << G4endl;
 }
 

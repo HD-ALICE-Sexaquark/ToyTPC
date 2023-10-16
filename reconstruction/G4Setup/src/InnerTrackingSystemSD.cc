@@ -64,7 +64,7 @@ G4bool InnerTrackingSystemSD::ProcessHits(G4Step* aStep, G4TouchableHistory*) {
     InnerTrackingSystemHit* newHit = new InnerTrackingSystemHit();
 
     newHit->SetTrackID(aStep->GetTrack()->GetTrackID());
-    newHit->SetChamberNb(aStep->GetPreStepPoint()->GetTouchableHandle()->GetCopyNumber());
+    newHit->SetLayerNb(aStep->GetPreStepPoint()->GetTouchableHandle()->GetCopyNumber());
     newHit->SetEdep(edep);
     newHit->SetMomentum(aStep->GetPostStepPoint()->GetMomentum());
     newHit->SetPosition(aStep->GetPostStepPoint()->GetPosition());

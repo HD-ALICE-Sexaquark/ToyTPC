@@ -1,4 +1,4 @@
-# Macro file for the visualization setting for the initialization phase 
+# Macro file for the visualization setting for the initialization phase
 # of the B2 example when running in interactive mode
 #
 
@@ -31,7 +31,7 @@
 /vis/drawVolume
 #
 # Specify view angle:
-/vis/viewer/set/viewpointThetaPhi 90. 180.
+/vis/viewer/set/viewpointThetaPhi 0. 180.
 #
 # Specify zoom value:
 /vis/viewer/zoom 1.4
