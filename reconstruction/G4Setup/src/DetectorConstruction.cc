@@ -281,6 +281,14 @@ void DetectorConstruction::SetMaxStep(G4double maxStep) {
     if (fStepLimit_ITS && maxStep > 0.) fStepLimit_ITS->SetMaxAllowedStep(maxStep);
 }
 
+
+void DetectorConstruction::SetMagneticField(G4double magnitude_in_z)
+{
+    G4ThreeVector newFieldValue(0., 0., magnitude_in_z * tesla);
+    if (fMagFieldMessenger) fMagFieldMessenger->SetFieldValue(newFieldValue);
+    else G4cerr << "Magnetic Field Messenger Not Found." << G4endl;
+}
+
 void DetectorConstruction::SetCheckOverlaps(G4bool checkOverlaps) { fCheckOverlaps = checkOverlaps; }
 
 }  // namespace B2a

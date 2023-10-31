@@ -29,6 +29,7 @@
 #include "DetectorMessenger.hh"
 #include "DetectorConstruction.hh"
 
+#include "G4UIcmdWithADouble.hh"
 #include "G4UIcmdWithAString.hh"
 #include "G4UIdirectory.hh"
 
@@ -63,6 +64,11 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det) : fDetectorConst
     fTPCFileCmd->SetGuidance("Select output filename for TPC info");
     fTPCFileCmd->SetParameterName("filename", false);
     fTPCFileCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
+
+    fMagFieldCmd = new G4UIcmdWithADouble("/ALICE/mag_field", this);
+    fMagFieldCmd->SetGuidance("Change the z-component of the magnetic field");
+    fMagFieldCmd->SetParameterName("filename", false);
+    fMagFieldCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 }
 
 DetectorMessenger::~DetectorMessenger() {
@@ -70,6 +76,7 @@ DetectorMessenger::~DetectorMessenger() {
     delete fTrajFileCmd;
     delete fITSFileCmd;
     delete fTPCFileCmd;
+    delete fMagFieldCmd;
     delete fALICE;
 }
 
@@ -86,6 +93,9 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue) {
     }
     if (command == fTPCFileCmd) {
         tpc_file = newValue;
+    }
+    if (command == fMagFieldCmd) {
+        fDetectorConstruction->SetMagneticField(fMagFieldCmd->GetNewDoubleValue(newValue));
     }
 }
 

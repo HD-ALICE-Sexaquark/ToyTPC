@@ -34,7 +34,7 @@
 
 class G4UIdirectory;
 class G4UIcmdWithAString;
-class G4UIcmdWithAnInteger;
+class G4UIcmdWithADouble;
 
 namespace B2a {
 
@@ -56,6 +56,7 @@ class DetectorMessenger : public G4UImessenger {
     G4UIcmdWithAString* fTrajFileCmd = nullptr;
     G4UIcmdWithAString* fITSFileCmd = nullptr;
     G4UIcmdWithAString* fTPCFileCmd = nullptr;
+    G4UIcmdWithADouble* fMagFieldCmd = nullptr;
 };
 
 }  // namespace B2a

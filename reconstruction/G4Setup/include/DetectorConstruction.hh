@@ -58,6 +58,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction {
     // Set methods
     void SetMaxStep(G4double);
     void SetCheckOverlaps(G4bool);
+    void SetMagneticField(G4double);
 
    private:
     void DefineMaterials();
