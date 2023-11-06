@@ -50,6 +50,8 @@ std::string input_file = "";
 std::string traj_file = "";
 std::string its_file = "";
 std::string tpc_file = "";
+G4int pdg_single_part = 0;
+G4float py_single_part = 0.;
 
 int main(int argc, char** argv) {
 

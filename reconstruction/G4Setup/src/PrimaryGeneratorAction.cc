@@ -39,6 +39,8 @@
 #include "Randomize.hh"
 
 extern std::string input_file;
+extern G4int pdg_single_part;
+extern G4float py_single_part;
 
 namespace B2a {
 
@@ -51,64 +53,77 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction() { delete fParticlesGun; }
 
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
 
-    /* Read CSV file */
+    if (pdg_single_part != 0 && py_single_part != 0.) {
 
-    std::vector<int> mcStatus, mcPdgCode, mcMotherPdgCode;
-    std::vector<double> mcPx, mcPy, mcPz;
+        /* Let Geant4 create the particles */
 
-    G4String input_filename = "../mc.csv";  // default test value
-    if (input_file != "") input_filename = input_file;
-
-    std::ifstream mcFile(input_filename);
-    if (!mcFile.is_open()) {
-        G4cerr << "ERROR: input file " << input_filename << " not found." << G4endl;
-        return;
-    }
-
-    std::string line;
-
-    while (std::getline(mcFile, line)) {
-
-        // protection
-        if (line == "") continue;
-
-        std::istringstream iss(line);
-        std::string token;
-
-        // Read each column separated by commas
-        std::getline(iss, token, ',');
-
-        // (debug)
-        // std::cout << "TOKEN: " << token << std::endl;
-
-        mcStatus.push_back(std::stoi(token));
-
-        std::getline(iss, token, ',');
-        mcPdgCode.push_back(std::stoi(token));
-
-        std::getline(iss, token, ',');
-        mcPx.push_back(std::stod(token));
-
-        std::getline(iss, token, ',');
-        mcPy.push_back(std::stod(token));
-
-        std::getline(iss, token, ',');
-        mcPz.push_back(std::stod(token));
-    }
-
-    mcFile.close();
-
-    /* Gun */
-
-    fParticlesGun = new G4ParticleGun(1);
-
-    for (int i = 0; i < (int)mcStatus.size(); i++) {
-
-        fParticlesGun->SetParticleDefinition(G4ParticleTable::GetParticleTable()->FindParticle(mcPdgCode[i]));
-        fParticlesGun->SetParticleMomentum(G4ThreeVector(mcPx[i] * GeV, mcPy[i] * GeV, mcPz[i] * GeV));
+        fParticlesGun = new G4ParticleGun(1);
+        fParticlesGun->SetParticleDefinition(G4ParticleTable::GetParticleTable()->FindParticle(pdg_single_part));
+        fParticlesGun->SetParticleMomentum(G4ThreeVector(0., py_single_part, 0.));
         fParticlesGun->SetParticlePosition(G4ThreeVector(0., 0., 0.));
-
         fParticlesGun->GeneratePrimaryVertex(anEvent);
+
+    } else {
+
+        /* Create particles from CSV file */
+
+        std::vector<int> mcStatus, mcPdgCode, mcMotherPdgCode;
+        std::vector<double> mcPx, mcPy, mcPz;
+
+        G4String input_filename = "../mc.csv";  // default test value
+        if (input_file != "") input_filename = input_file;
+
+        std::ifstream mcFile(input_filename);
+        if (!mcFile.is_open()) {
+            G4cerr << "ERROR: input file " << input_filename << " not found." << G4endl;
+            return;
+        }
+
+        std::string line;
+
+        while (std::getline(mcFile, line)) {
+
+            // protection
+            if (line == "") continue;
+
+            std::istringstream iss(line);
+            std::string token;
+
+            // Read each column separated by commas
+            std::getline(iss, token, ',');
+
+            // (debug)
+            // std::cout << "TOKEN: " << token << std::endl;
+
+            mcStatus.push_back(std::stoi(token));
+
+            std::getline(iss, token, ',');
+            mcPdgCode.push_back(std::stoi(token));
+
+            std::getline(iss, token, ',');
+            mcPx.push_back(std::stod(token));
+
+            std::getline(iss, token, ',');
+            mcPy.push_back(std::stod(token));
+
+            std::getline(iss, token, ',');
+            mcPz.push_back(std::stod(token));
+        }
+
+        mcFile.close();
+
+        /* Gun */
+
+        fParticlesGun = new G4ParticleGun(1);
+
+        for (int i = 0; i < (int)mcStatus.size(); i++) {
+
+            fParticlesGun->SetParticleDefinition(G4ParticleTable::GetParticleTable()->FindParticle(mcPdgCode[i]));
+            fParticlesGun->SetParticleMomentum(G4ThreeVector(mcPx[i] * GeV, mcPy[i] * GeV, mcPz[i] * GeV));
+            fParticlesGun->SetParticlePosition(G4ThreeVector(0., 0., 0.));
+
+            fParticlesGun->GeneratePrimaryVertex(anEvent);
+        }
     }
 }
 }  // namespace B2a
