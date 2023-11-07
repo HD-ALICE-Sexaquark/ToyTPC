@@ -29,10 +29,13 @@
 #include "DetectorMessenger.hh"
 #include "DetectorConstruction.hh"
 
+#include "G4SystemOfUnits.hh"
+#include "G4TransportationManager.hh"
 #include "G4UIcmdWithADoubleAndUnit.hh"
 #include "G4UIcmdWithAString.hh"
 #include "G4UIcmdWithAnInteger.hh"
 #include "G4UIdirectory.hh"
+#include "G4UnitsTable.hh"
 
 extern std::string input_file;
 extern std::string traj_file;
@@ -68,22 +71,18 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction* det) : fDetectorConst
     fTPCFileCmd->SetParameterName("filename", false);
     fTPCFileCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
-    fMagFieldCmd = new G4UIcmdWithADoubleAndUnit("/ALICE/mag_field", this);
-    fMagFieldCmd->SetGuidance("Change the z-component of the magnetic field");
-    fMagFieldCmd->SetParameterName("mag_field", false);
-    fMagFieldCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
-    fMagFieldCmd->SetUnitCandidates("tesla");
-
     fSinglePartPDGCmd = new G4UIcmdWithAnInteger("/ALICE/pdg_single_part", this);
     fSinglePartPDGCmd->SetGuidance("Choose the PDG code of the single particle to inject");
     fSinglePartPDGCmd->SetParameterName("pdg_code", false);
     fSinglePartPDGCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
 
+    // [information of units available in: source/global/management/src/G4UnitsTable.cc]
     fSinglePartPyCmd = new G4UIcmdWithADoubleAndUnit("/ALICE/py_single_part", this);
     fSinglePartPyCmd->SetGuidance("Choose the momentum's y-component of the single particle to inject");
     fSinglePartPyCmd->SetParameterName("py", false);
+    fSinglePartPyCmd->SetUnitCategory("Momentum");
+    fSinglePartPyCmd->SetUnitCandidates("MeV/c GeV/c");
     fSinglePartPyCmd->AvailableForStates(G4State_PreInit, G4State_Idle);
-    fSinglePartPyCmd->SetUnitCandidates("MeV GeV");
 }
 
 DetectorMessenger::~DetectorMessenger() {
@@ -91,7 +90,6 @@ DetectorMessenger::~DetectorMessenger() {
     delete fTrajFileCmd;
     delete fITSFileCmd;
     delete fTPCFileCmd;
-    delete fMagFieldCmd;
     delete fSinglePartPDGCmd;
     delete fSinglePartPyCmd;
     delete fALICE;
@@ -110,9 +108,6 @@ void DetectorMessenger::SetNewValue(G4UIcommand* command, G4String newValue) {
     }
     if (command == fTPCFileCmd) {
         tpc_file = newValue;
-    }
-    if (command == fMagFieldCmd) {
-        fDetectorConstruction->SetMagneticField(fMagFieldCmd->GetNewDoubleValue(newValue));
     }
     if (command == fSinglePartPDGCmd) {
         pdg_single_part = fSinglePartPDGCmd->GetNewIntValue(newValue);

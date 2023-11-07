@@ -57,7 +57,6 @@ class DetectorMessenger : public G4UImessenger {
     G4UIcmdWithAString* fTrajFileCmd = nullptr;
     G4UIcmdWithAString* fITSFileCmd = nullptr;
     G4UIcmdWithAString* fTPCFileCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fMagFieldCmd = nullptr;
     G4UIcmdWithAnInteger* fSinglePartPDGCmd = nullptr;
     G4UIcmdWithADoubleAndUnit* fSinglePartPyCmd = nullptr;
 };

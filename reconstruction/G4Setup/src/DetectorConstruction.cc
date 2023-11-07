@@ -284,7 +284,7 @@ void DetectorConstruction::SetMaxStep(G4double maxStep) {
 
 void DetectorConstruction::SetMagneticField(G4double magnitude_in_z)
 {
-    G4ThreeVector newFieldValue(0., 0., magnitude_in_z * tesla);
+    G4ThreeVector newFieldValue(0., 0., magnitude_in_z);
     if (fMagFieldMessenger) fMagFieldMessenger->SetFieldValue(newFieldValue);
     else G4cerr << "Magnetic Field Messenger Not Found." << G4endl;
 }
