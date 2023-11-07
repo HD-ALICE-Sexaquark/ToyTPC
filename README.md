@@ -19,9 +19,25 @@ Generation and reconstruction of low-pT charged particles (pions, kaons, protons
 
 * **Output:**
 
-  * Reconstruction file (`.csv`) with the following format:
+  Three files will be output. The information among hits and trajectories can be connected (or linked) via the **trackID**.
 
-     (_pending_)
+  * `eventXX_its.csv` contains the ITS2 hits information, where each line correspond to a different **hit** with the following format:
+
+    ```
+    eventID, trackID, layer number, x (cm), y (cm), z (cm), deposited energy (MeV), generation process
+    ```
+
+  * `eventXX_tpc.csv` contains the TPC hits information, where each line correspond to a different **hit** with the following format:
+
+    ```
+    eventID, trackID, x (cm), y (cm), z (cm), px (MeV/c), py (MeV/c), pz (MeV/c), time (ns), deposited energy (MeV), generation process
+    ```
+
+  * `eventXX_traj.csv` contains the trajectories (or true particle) information, where each line correspond to a different **particle** with the following format:
+
+    ```
+    eventID, trackID, PDGcode, initial x (cm), initial y (cm), initial z (cm), initial px (MeV), initial py (MeV), initial pz (MeV), parentID, charge
+    ```
 
 * **Interactive usage via Graphical User Interface:**
 
