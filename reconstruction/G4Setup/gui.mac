@@ -12,25 +12,32 @@
 /gui/addButton run "beamOn 1" "/run/beamOn 1"
 /gui/addButton run run1 "/control/execute run1.mac"
 #
-# Gun menu :
-/gui/addMenu gun Gun
-/gui/addButton gun "50 MeV"  "/gun/energy 50 MeV"
-/gui/addButton gun "1 GeV"   "/gun/energy 1 GeV"
-/gui/addButton gun "10 GeV"  "/gun/energy 10 GeV"
-/gui/addButton gun "e-"      "/gun/particle e-"
-/gui/addButton gun "pi0"     "/gun/particle pi0"
-/gui/addButton gun "pi+"     "/gun/particle pi+"
-/gui/addButton gun "neutron" "/gun/particle neutron"
-/gui/addButton gun "proton"  "/gun/particle proton"
+# Particle menu :
+/gui/addMenu particle "Single Particle"
+/gui/addButton particle "pion" "/ALICE/pdg_single_part 211"
+/gui/addButton particle "kaon"  "/ALICE/pdg_single_part 321"
+/gui/addButton particle "proton" "/ALICE/pdg_single_part 2212"
+/gui/addButton particle "Py = 25 MeV/c" "/ALICE/py_single_part 25 MeV/c"
+/gui/addButton particle "Py = 50 MeV/c" "/ALICE/py_single_part 50 MeV/c"
+/gui/addButton particle "Py = 75 MeV/c" "/ALICE/py_single_part 75 MeV/c"
+/gui/addButton particle "Py = 100 MeV/c" "/ALICE/py_single_part 100 MeV/c"
+/gui/addButton particle "Py = 150 MeV/c" "/ALICE/py_single_part 150 MeV/c"
+/gui/addButton particle "Py = 200 MeV/c" "/ALICE/py_single_part 200 MeV/c"
+/gui/addButton particle "Py = 225 MeV/c" "/ALICE/py_single_part 225 MeV/c"
+/gui/addButton particle "Py = 250 MeV/c" "/ALICE/py_single_part 250 MeV/c"
+/gui/addButton particle "Py = 300 MeV/c" "/ALICE/py_single_part 300 MeV/c"
 #
 # Field menu :
-/gui/addMenu field Field
-/gui/addButton field "off"       "/globalField/setValue 0   0 0 tesla"
-/gui/addButton field "0.2 tesla" "/globalField/setValue 0.2 0 0 tesla"
-/gui/addButton field "2.0 tesla" "/globalField/setValue 2.0 0 0 tesla"
+/gui/addMenu field "Magnetic Field"
+/gui/addButton field "off" "/globalField/setValue 0 0 0 tesla"
+/gui/addButton field "Bz = 0.05 tesla" "/globalField/setValue 0 0 0.05 tesla"
+/gui/addButton field "Bz = 0.1 tesla" "/globalField/setValue 0 0 0.1 tesla"
+/gui/addButton field "Bz = 0.2 tesla" "/globalField/setValue 0 0 0.2 tesla"
 #
 # Viewer menu :
 /gui/addMenu viewer Viewer
+/gui/addButton viewer "Reset viewing angle" "/vis/viewer/set/viewpointThetaPhi 0. 180."
+/gui/addButton viewer "Reset zoom" "/vis/viewer/zoom 1.4"
 /gui/addButton viewer "Set style surface" "/vis/viewer/set/style surface"
 /gui/addButton viewer "Set style wireframe" "/vis/viewer/set/style wireframe"
 /gui/addButton viewer "Refresh viewer" "/vis/viewer/refresh"
