@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # download and extract tar
-wget https://pythia.org/download/pythia83/pythia8309.tgz
-tar xvfz pythia8309.tgz
+wget https://pythia.org/download/pythia83/pythia8310.tgz
+tar xvfz pythia8310.tgz
 
 # set source dir
-mv pythia8309 pythia8309_src
-export PYTHIA_SRC=$(readlink -f pythia8309_src)
+mv pythia8310 pythia8310_src
+export PYTHIA_SRC=$(readlink -f pythia8310_src)
 
 # set installation dir
-mkdir pythia8309_root
-export PYTHIA_ROOT=$(readlink -f pythia8309_root)
+mkdir pythia8310
+export PYTHIA_ROOT=$(readlink -f pythia8310)
 
 # set current dir
 export CURRENT_DIR=$(readlink -f ${PWD})

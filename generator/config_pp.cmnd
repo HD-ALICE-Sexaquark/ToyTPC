@@ -2,7 +2,7 @@
 Main:numberOfEvents = 1
 
 ### beam
-Beams:eCM = 13500.0                                           # 13 TeV
+Beams:eCM = 13600.0                                           # 13 TeV
 Beams:idA = 2212                                              # proton
 Beams:idB = 2212                                              # proton
 

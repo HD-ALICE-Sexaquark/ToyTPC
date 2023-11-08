@@ -1,11 +1,7 @@
 .vscode/
 reconstruction/G4Setup_build/
 **.old
-bkg_gen/pythia8309_build
-bkg_gen/pythia8309_root
-bkg_gen/pythia8309_src
 **.tgz
-bkg_gen/main_fct
 **.log
 Makefile**
 output/
@@ -14,3 +10,7 @@ set_env.sh
 sim/
 analysis/*.csv
 analysis/*.root
+pythia*/
+generator/*.csv
+generator/main_GenCollision
+

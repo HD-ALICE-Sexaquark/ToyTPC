@@ -3,6 +3,10 @@
 // PYTHIA is licenced under the GNU GPL v2 or later, see COPYING for details.
 // Please respect the MCnet Guidelines, see GUIDELINES for details.
 
+/*
+ USAGE: after compilation, ./main_GenCollision config_pp.cmnd <n_events> <output_dir>
+*/
+
 #include <fstream>
 #include <iostream>
 #include <sstream>  // stringstream, useful to convert char to str
@@ -11,17 +15,31 @@
 #include "Pythia8/HeavyIons.h"
 #include "Pythia8/Pythia.h"
 
+#define DEBUG 1
+
 using namespace Pythia8;
 
 int main(int argc, char* argv[]) {
-    // usage: after compilation, ./main_hi main_hi.cfg
+
+    // parse input options
+    if (argc != 2 && argc != 4) return 1;
+    std::string config_file;
+    std::string output_dir;
+    int nEvent = 0;
+    if (argc >= 2) {
+        config_file = argv[1];
+        if (argc == 4) {
+            nEvent = atoi(argv[2]);
+            output_dir = argv[3];
+        }
+    }
 
     // declare generator
     Pythia pythia;
 
     // read config file
-    pythia.readFile(argv[1]);
-    int nEvent = pythia.mode("Main:numberOfEvents");
+    pythia.readFile(config_file);
+    if (!nEvent) nEvent = pythia.mode("Main:numberOfEvents");
 
     // initialize
     pythia.init();
@@ -54,10 +72,10 @@ int main(int argc, char* argv[]) {
         // prepare output filename
         if (nEvent == 1) {
             // test value
-            output_filename = "../reco/bkg.csv";
+            output_filename = "mc.csv";
         } else {
             aux_ss.clear();
-            sprintf(buffer_a, "event%03d_bkg.csv", iEvent);  // format string, insert int as a 3-digit number
+            sprintf(buffer_a, "%s/event%03d_mc.csv", output_dir.c_str(), iEvent);  // format string, insert int as a 3-digit number
             aux_ss << buffer_a;
             aux_ss >> output_filename;
         }
@@ -66,8 +84,9 @@ int main(int argc, char* argv[]) {
         // reset counter
         n_particles = 0;
 
-        // (debug)
-        std::cout << "main_fct :: >> Event " << iEvent << std::endl;
+#if DEBUG
+        std::cout << "GenCollision :: Event " << iEvent << std::endl;
+#endif
 
         // particle loop -- print particle info
         for (int i = 0; i < pythia.event.size(); i++) {
@@ -94,8 +113,9 @@ int main(int argc, char* argv[]) {
                     pythia.event[i].status(), pythia.event[i].id(), id_mother,  //
                     pythia.event[i].px(), pythia.event[i].py(), pythia.event[i].pz());
 
-            // (debug)
-            std::cout << "main_fct :: " << buffer_b;
+#if DEBUG
+            std::cout << "GenCollision :: " << buffer_b;
+#endif
 
             // (output)
             output_file << buffer_b;
@@ -106,19 +126,17 @@ int main(int argc, char* argv[]) {
 
         output_file.close();
 
+#if DEBUG
         if (n_particles) {
-            // (debug)
-            std::cout << "main_fct :: >> " << n_particles << " particles have been generated and stored in " << output_filename
-                      << std::endl;
+            std::cout << "GenCollision :: " << n_particles << " particles have been generated." << std::endl;
+            std::cout << "GenCollision :: File " << output_filename << " has been created." << std::endl;
         } else {
-            // (debug)
-            std::cout << "main_fct :: >> " << n_particles << " particles have been generated. Running it again..." << std::endl;
-            iEvent--;
+            std::cout << "GenCollision :: No particles have been generated. Running it again..." << std::endl;
         }
-
-        // (debug) empty line
         std::cout << std::endl;
+#endif
 
+        if (!n_particles) iEvent--;
     }  // end event loop
 
     // print statistics
