@@ -19,20 +19,46 @@
 
 using namespace Pythia8;
 
+void print_help() {
+    std::cout << "GenCollision :: USAGE: ./main_GenCollision [COMMANDS]" << std::endl;
+    std::cout << "GenCollision ::        where [COMMANDS] could be:" << std::endl;
+    std::cout << "GenCollision ::        --help                              : print this message, and then exit" << std::endl;
+    std::cout << "GenCollision ::        --n <n>                             : number of events" << std::endl;
+    std::cout << "GenCollision ::        --config <config_file>  (mandatory) : input configuration file" << std::endl;
+    std::cout << "GenCollision ::        --output <output_dir>               : output directory" << std::endl;
+}
+
 int main(int argc, char* argv[]) {
 
-    // parse input options
-    if (argc != 2 && argc != 4) return 1;
+    /* Parse command-line options */
+
     std::string config_file;
     std::string output_dir;
     int nEvent = 0;
-    if (argc >= 2) {
-        config_file = argv[1];
-        if (argc == 4) {
-            nEvent = atoi(argv[2]);
-            output_dir = argv[3];
+    for (int i = 0; i < argc; i++) {
+        if ((std::string)argv[i] == "--help") {
+            print_help();
+            return 0;
+        } else if ((std::string)argv[i] == "--n") {
+            nEvent = atoi(argv[i + 1]);
+        } else if ((std::string)argv[i] == "--config") {
+            config_file = argv[i + 1];
+        } else if ((std::string)argv[i] == "--output") {
+            output_dir = argv[i + 1];
         }
     }
+    if (output_dir == "") output_dir = ".";
+    if (config_file == "") {
+        std::cerr << "GenCollision :: ERROR: an input configuration file must be provided." << std::endl;
+        print_help();
+        return 1;
+    }
+
+    std::cout << "GenCollision :: Input Options" << std::endl;
+    std::cout << "GenCollision :: =============" << std::endl;
+    std::cout << "GenCollision :: >> n_events    = " << nEvent << std::endl;
+    std::cout << "GenCollision :: >> config_file = " << config_file << std::endl;
+    std::cout << "GenCollision :: >> output_dir  = " << output_dir << std::endl;
 
     // declare generator
     Pythia pythia;
