@@ -125,6 +125,7 @@ int main(int argc, char** argv) {
         UImanager->ApplyCommand("/ALICE/traj_file " + output_filename_traj);
         UImanager->ApplyCommand("/ALICE/its_file " + output_filename_ITS);
         UImanager->ApplyCommand("/ALICE/tpc_file " + output_filename_TPC);
+        UImanager->ApplyCommand("/globalField/setValue 0 0 0.2 tesla");
         UImanager->ApplyCommand("/run/initialize");  // G4RunManager::Initialize().
         UImanager->ApplyCommand("/tracking/verbose 0");
         UImanager->ApplyCommand("/tracking/storeTrajectory 2");  // IMPORTANT!!
