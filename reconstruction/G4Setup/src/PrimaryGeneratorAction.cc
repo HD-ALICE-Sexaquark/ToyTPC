@@ -67,10 +67,10 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
 
         /* Create particles from CSV file */
 
-        std::vector<int> mcStatus, mcPdgCode, mcMotherPdgCode;
+        std::vector<int> mcPdgCode;
         std::vector<double> mcPx, mcPy, mcPz;
 
-        G4String input_filename = "../mc.csv";  // default test value
+        G4String input_filename = "../mc.csv";  // default value
         if (input_file != "") input_filename = input_file;
 
         std::ifstream mcFile(input_filename);
@@ -89,15 +89,8 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
             std::istringstream iss(line);
             std::string token;
 
-            // Read each column separated by commas
-            std::getline(iss, token, ',');
-
-            // (debug)
-            // std::cout << "TOKEN: " << token << std::endl;
-
-            mcStatus.push_back(std::stoi(token));
-
-            std::getline(iss, token, ',');
+            // read each column separated by commas
+            std::getline(iss, token, ','); // (debug) std::cout << "TOKEN: " << token << std::endl;
             mcPdgCode.push_back(std::stoi(token));
 
             std::getline(iss, token, ',');
@@ -116,7 +109,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent) {
 
         fParticlesGun = new G4ParticleGun(1);
 
-        for (int i = 0; i < (int)mcStatus.size(); i++) {
+        for (int i = 0; i < (int)mcPdgCode.size(); i++) {
 
             fParticlesGun->SetParticleDefinition(G4ParticleTable::GetParticleTable()->FindParticle(mcPdgCode[i]));
             fParticlesGun->SetParticleMomentum(G4ThreeVector(mcPx[i] * GeV, mcPy[i] * GeV, mcPz[i] * GeV));

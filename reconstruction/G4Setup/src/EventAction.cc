@@ -196,7 +196,7 @@ void EventAction::StoreEvent(const G4Event* event) {
         traj_parentID = (*trajectoryContainer)[i]->GetParentID();
         traj_charge = (G4int)(*trajectoryContainer)[i]->GetCharge();
 
-        fTrajectoriesFile << eventID << "," << traj_trackID << "," << traj_PDGcode << ","                      //
+        fTrajectoriesFile << traj_trackID << "," << traj_PDGcode << ","                                        //
                           << traj_x_ini / cm << "," << traj_y_ini / cm << "," << traj_z_ini / cm << ","        //
                           << traj_px_ini / MeV << "," << traj_py_ini / MeV << "," << traj_pz_ini / MeV << ","  //
                           << traj_parentID << "," << traj_charge << G4endl;
@@ -221,7 +221,7 @@ void EventAction::StoreEvent(const G4Event* event) {
     G4int its_layer_n;
     G4ThreeVector its_position;
     G4double its_x, its_y, its_z;
-    G4double its_dedx;
+    G4double its_edep;
     G4String its_process;
 
     for (G4int i = 0; i < n_its_hits; i++) {
@@ -234,12 +234,12 @@ void EventAction::StoreEvent(const G4Event* event) {
         its_x = its_position.x();
         its_y = its_position.y();
         its_z = its_position.z();
-        its_dedx = its_hit->GetEdep();
+        its_edep = its_hit->GetEdep();
         its_process = its_hit->GetProcess();
 
-        fITSFile << eventID << "," << its_trackID << "," << its_layer_n << ","   //
+        fITSFile << its_trackID << "," << its_layer_n << ","                     //
                  << its_x / cm << "," << its_y / cm << "," << its_z / cm << ","  //
-                 << its_dedx / MeV << "," << its_process << G4endl;
+                 << its_edep / MeV << "," << its_process << G4endl;
     }
 
     fITSFile.close();
@@ -264,7 +264,7 @@ void EventAction::StoreEvent(const G4Event* event) {
     G4ThreeVector tpc_momentum;
     G4double tpc_px, tpc_py, tpc_pz;
     G4double tpc_time;
-    G4double tpc_dedx;
+    G4double tpc_edep;
     G4String tpc_process;
 
     for (G4int i = 0; i < n_tpc_hits; i++) {
@@ -281,13 +281,13 @@ void EventAction::StoreEvent(const G4Event* event) {
         tpc_py = tpc_momentum.y();
         tpc_pz = tpc_momentum.z();
         tpc_time = tpc_hit->GetTime();
-        tpc_dedx = tpc_hit->GetEdep();
+        tpc_edep = tpc_hit->GetEdep();
         tpc_process = tpc_hit->GetProcess();
 
-        fTPCFile << eventID << "," << tpc_trackID << ","                               //
+        fTPCFile << tpc_trackID << ","                                                 //
                  << tpc_x / cm << "," << tpc_y / cm << "," << tpc_z / cm << ","        //
                  << tpc_px / MeV << "," << tpc_py / MeV << "," << tpc_pz / MeV << ","  //
-                 << tpc_time / nanosecond << "," << tpc_dedx / MeV << "," << tpc_process << G4endl;
+                 << tpc_time / nanosecond << "," << tpc_edep / MeV << "," << tpc_process << G4endl;
     }
 
     fTPCFile.close();

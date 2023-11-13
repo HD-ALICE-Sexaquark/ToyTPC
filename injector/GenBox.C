@@ -22,8 +22,8 @@ void GenBox(TString fOutputFilename = "../reconstruction/mc.csv") {
 
     // params
     std::vector<Int_t> pdgVector = {211, 321, 2212};
-    std::vector<Float_t> fPtMin = {0.2, 0.2, 0.2};  // (in GeV/c)
-    std::vector<Float_t> fPtMax = {0.3, 0.3, 0.45};
+    std::vector<Float_t> fPtMin = {0., 0., 0.};  // (in GeV/c)
+    std::vector<Float_t> fPtMax = {0.05, 0.1, 0.15};
     Float_t fThetaMin = 0.439;                    // (in rad) ~ 25.15 rad ~ eta = 1.5
     Float_t fThetaMax = TMath::Pi() - fThetaMin;  // (in rad) ~ 154.84 deg ~ eta = -1.5
     Float_t fPhiMin = 0. * TMath::DegToRad();
@@ -46,7 +46,7 @@ void GenBox(TString fOutputFilename = "../reconstruction/mc.csv") {
 
         for (Int_t pp = 0; pp < (Int_t)pdgVector.size(); pp++) {
 
-            Int_t current_particle = sign * pdgVector[pp];
+            Int_t current_particle_pdg = sign * pdgVector[pp];
 
             gRandom->RndmArray(3, fRandom);
 
@@ -55,13 +55,13 @@ void GenBox(TString fOutputFilename = "../reconstruction/mc.csv") {
             Float_t Theta = fThetaMin + fRandom[1] * (fThetaMax - fThetaMin);  // polar angle (uniform distribution) (in radians)
             Float_t Eta = -TMath::Log(TMath::Tan(Theta / 2));                  // eta
             Float_t Phi = fPhiMin + fRandom[2] * (fPhiMax - fPhiMin);          // azimuthal angle (uniform distribution) (in radians)
-            Float_t M = pdg.GetParticle(current_particle)->Mass();             // mass (in GeV/c^2)
+            Float_t M = pdg.GetParticle(current_particle_pdg)->Mass();             // mass (in GeV/c^2)
 
             TLorentzVector Particle;
             Particle.SetPtEtaPhiM(Pt, Eta, Phi, M);
 
             // print particle onto CSV file
-            TString auxStr = Form("1,%i,%.8e,%.8e,%.8e\n", current_particle, Particle.Px(), Particle.Py(), Particle.Pz());
+            TString auxStr = Form("%i,%.8e,%.8e,%.8e\n", current_particle_pdg, Particle.Px(), Particle.Py(), Particle.Pz());
 
             // (debug)
             printf("%s", auxStr.Data());

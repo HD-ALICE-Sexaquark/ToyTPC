@@ -14,7 +14,7 @@ Generation and reconstruction of low-pT charged particles (pions, kaons, protons
   * MC-generated particles file (as in `reconstruction/mc.csv`) with the following format:
 
     ```
-    1,PDGCode,Px,Py,Pz
+    PDGCode,Px,Py,Pz
     ```
 
 * **Output:**
@@ -73,14 +73,25 @@ Generation and reconstruction of low-pT charged particles (pions, kaons, protons
 
 * **Usage:**
 
-  `root -l -b -q 'injector/GenBox.C("<output_file>")'`
-
+  ```
+  root -l -b -q 'injector/GenBox.C("<output_file>")'
+  ```
   where:
   * `<output_file>` : path of output file
 
 ## **generator**
 
-  (_pending_)
+* **Requirements:** PYTHIA8 (can be easily installed with `generator/install_pythia.sh`)
+
+* **Usage:**
+
+  ```
+  ./main_GenCollision --n <n> --config <config_file> --output <output_dir>
+  ```
+  where:
+  * `--n <n>` : number of events to generate
+  * `--config <config_file>` : input configuration file (mandatory), should look like `generator/config_pp.cmnd`
+  * `--output <output_dir>` : output directory
 
 ## **send_production.sh**
 

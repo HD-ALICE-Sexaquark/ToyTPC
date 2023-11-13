@@ -79,11 +79,6 @@ int main(int argc, char* argv[]) {
     char buffer_a[48];
     char buffer_b[96];
 
-    // aux. variables to hold mother's pid
-    int mother1;
-    int mother2;
-    int id_mother;
-
     // counter of valid particles
     int n_particles;
 
@@ -127,17 +122,8 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            // get mother indices
-            mother1 = pythia.event[i].mother1();
-            mother2 = pythia.event[i].mother2();
-            // assign mother's pid
-            // verify the "normal" mother case, where it is meaningful to speak of one single mother to several products
-            // otherwise, set PID of mother to 0
-            id_mother = (mother1 > 0 && mother2 == 0) ? pythia.event[mother1].id() : 0;
-
-            sprintf(buffer_b, "%i,%i,%i,%.8e,%.8e,%.8e\n",                      //
-                    pythia.event[i].status(), pythia.event[i].id(), id_mother,  //
-                    pythia.event[i].px(), pythia.event[i].py(), pythia.event[i].pz());
+            sprintf(buffer_b, "%i,%.8e,%.8e,%.8e\n",                      //
+                    pythia.event[i].id(), pythia.event[i].px(), pythia.event[i].py(), pythia.event[i].pz());
 
 #if DEBUG
             std::cout << "GenCollision :: " << buffer_b;
