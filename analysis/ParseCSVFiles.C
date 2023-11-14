@@ -3,13 +3,11 @@
 #include <map>
 #include <sstream>
 
-#include "TDatabasePDG.h"
 #include "TF1.h"
 #include "TFile.h"
 #include "TLorentzVector.h"
 #include "TMath.h"
 #include "TObjArray.h"
-#include "TRandom3.h"
 #include "TString.h"
 #include "TTree.h"
 #include "TVector3.h"
@@ -17,7 +15,7 @@
 /*
  Container of ITS hit information.
  */
-struct ITSHit_t {
+struct ITSHit_tt {
     Int_t layerNb;
     Float_t x;
     Float_t y;
@@ -28,7 +26,7 @@ struct ITSHit_t {
 /*
  Container of TPC hit information.
  */
-struct TPCHit_t {
+struct TPCHit_tt {
     Float_t x;
     Float_t y;
     Float_t z;
@@ -42,7 +40,7 @@ struct TPCHit_t {
 /*
  Container for particle information.
  */
-struct Particle_t {
+struct Particle_tt {
     Int_t trackID;
     Int_t PDGcode;
     Float_t x_ini;
@@ -52,11 +50,11 @@ struct Particle_t {
     Float_t py_ini;
     Float_t pz_ini;
     Int_t parentID;
+    Int_t n_daughters;
     Bool_t is_primary;
     Int_t charge;
-    TString process;
-    std::vector<ITSHit_t> its_hits;
-    std::vector<TPCHit_t> tpc_hits;
+    std::vector<ITSHit_tt> its_hits;
+    std::vector<TPCHit_tt> tpc_hits;
 };
 
 /*
@@ -64,7 +62,7 @@ struct Particle_t {
  */
 struct Event_tt {
     Int_t eventID;
-    std::vector<Particle_t> particles;
+    std::vector<Particle_tt> particles;
 };
 
 void ParseCSVFiles(Int_t run_n = 0) {
@@ -82,13 +80,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
     // vector and map to link between eventID, trackID and main vector indices
     std::vector<std::map<Int_t, Int_t>> map_event_index;  // map[eventID][trackID] = index
-    std::map<Int_t, Int_t> map_track_index;               // map[trackID] = index
-
-    // init PDG database object
-    TDatabasePDG pdg;
-    const Float_t kMassPion = pdg.GetParticle(211)->Mass();
-    const Float_t kMassKaon = pdg.GetParticle(321)->Mass();
-    const Float_t kMassProton = pdg.GetParticle(2212)->Mass();
+    std::map<Int_t, Int_t> map_track_index;               // key = trackID, value = index
 
     /** Part 1a: Trajectories **/
 
@@ -101,10 +93,14 @@ void ParseCSVFiles(Int_t run_n = 0) {
     }
 
     /* (Auxiliary variables) */
+
+    Particle_tt aux_particle;
+    Event_tt aux_event;
     Int_t current_eventID;
     Int_t prev_eventID = -1;
-    Event_tt aux_event;
-    Particle_t aux_particle;
+
+    std::vector<std::map<Int_t, Int_t>> map_event_ndaughters;  // map[eventID][trackID] = n_daughters
+    std::map<Int_t, Int_t> n_daughters;                        // key = trackID, value = n_daughters
 
     // read line by line ~ loop over particles
     TObjArray *token = nullptr;
@@ -122,18 +118,21 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
         /*  [0] eventID     */ current_eventID = ((TString)(token->At(0)->GetName())).Atoi();
 
-        // determine new event
         if (current_eventID != prev_eventID) {
-
-            // store past event info into main vector
+            // if the event value changed, we're in a different event now
             if (prev_eventID != -1) {
+                // then, store past event info into main vector, clean particles vector
                 aux_event.eventID = prev_eventID;
                 Events.push_back(aux_event);
                 aux_event.particles.clear();
+                // assign map of tracks->indices to corresponding event, clean
                 map_event_index.push_back(map_track_index);
                 map_track_index.clear();
+                // assign map of tracks->n_daughters to corresponding event, clean
+                map_event_ndaughters.push_back(n_daughters);
+                n_daughters.clear();
             }
-
+            // now, we're inside another event
             prev_eventID = current_eventID;
         }
 
@@ -151,19 +150,28 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
         aux_event.particles.push_back(aux_particle);
 
-        // update map
+        // update maps
         map_track_index[aux_particle.trackID] = (Int_t)aux_event.particles.size() - 1;
+        n_daughters[aux_particle.parentID]++;
     }  // end of reading file
 
     traj_file.close();
 
-    /* (Auxiliary variables) */
+    /* Posteriori variable: N Daughters */
 
-    Int_t aux_track_id;
-    Int_t aux_index;
-    TString aux_process;
+    for (Event_tt &evt : Events) {
+        for (Particle_tt &part : evt.particles) {
+            part.n_daughters = map_event_ndaughters[evt.eventID][part.trackID];
+        }
+    }
 
     /** Part 1b: ITS Hits **/
+
+    /* (Auxiliary variables) */
+
+    ITSHit_tt aux_its_hit;
+    Int_t aux_track_id;
+    Int_t aux_index;
 
     // load file into memory
     std::fstream its_file;
@@ -172,9 +180,6 @@ void ParseCSVFiles(Int_t run_n = 0) {
         std::cerr << "ParseCSVFiles.C :: ERROR :: File " << input_its_file << " not found." << std::endl;
         return;
     }
-
-    // auxiliary object
-    ITSHit_t aux_its_hit;
 
     // read line by line ~ loop over hits
     line.clear();
@@ -209,6 +214,10 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
     /** Part 1c: TPC Hits **/
 
+    /* (Auxiliary variables) */
+
+    TPCHit_tt aux_tpc_hit;
+
     // load file into memory
     std::fstream tpc_file;
     tpc_file.open(input_tpc_file);
@@ -216,9 +225,6 @@ void ParseCSVFiles(Int_t run_n = 0) {
         std::cerr << "ParseCSVFiles.C :: ERROR :: File " << input_tpc_file << " not found." << std::endl;
         return;
     }
-
-    // auxiliary object
-    TPCHit_t aux_tpc_hit;
 
     // read line by line ~ loop over hits
     line.clear();
@@ -254,18 +260,19 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
     tpc_file.close();
 
-    /*** Debug: Check content of Particles vector ***/
+    /*** Debug: Check content of Events vector ***/
 
     for (Event_tt &evt : Events) {
 
-        std::cout << "ParseCSVFiles.C :: Printing Event #" << (Int_t)evt.eventID << std::endl;
+        std::cout << "ParseCSVFiles.C :: Printing Event #" << evt.eventID << std::endl;
         std::cout << "ParseCSVFiles.C :: (n particles = " << (Int_t)evt.particles.size() << ")" << std::endl;
         std::cout << "ParseCSVFiles.C :: " << std::endl;
 
-        for (Particle_t &part : evt.particles) {
+        for (Particle_tt &part : evt.particles) {
 
             std::cout << "ParseCSVFiles.C :: part " << part.trackID << std::endl;
             std::cout << "ParseCSVFiles.C :: >> pdg,is_primary " << part.PDGcode << ", " << part.is_primary << std::endl;
+            std::cout << "ParseCSVFiles.C :: >> parent,n_daughters " << part.parentID << ", " << part.n_daughters << std::endl;
             std::cout << "ParseCSVFiles.C :: >> x,y,z " << part.x_ini << ", " << part.y_ini << ", " << part.z_ini << ", " << std::endl;
             std::cout << "ParseCSVFiles.C :: >> px,py,pz " << part.px_ini << ", " << part.py_ini << ", " << part.pz_ini << ", "
                       << std::endl;
@@ -273,12 +280,12 @@ void ParseCSVFiles(Int_t run_n = 0) {
             std::cout << "ParseCSVFiles.C :: >> n_tpc_hits " << (Int_t)part.tpc_hits.size() << std::endl;
 
             /*
-            for (ITSHit_t &its_hit : part.its_hits) {
+            for (ITSHit_tt &its_hit : part.its_hits) {
                 std::cout << "ParseCSVFiles.C ::    >> layer " << its_hit.layerNb << std::endl;
                 std::cout << "ParseCSVFiles.C ::    >> edep " << its_hit.edep << std::endl;
                 std::cout << "ParseCSVFiles.C ::    >> x,y,z " << its_hit.x << ", " << its_hit.y << ", " << its_hit.z << ", " << std::endl;
             }
-            for (TPCHit_t &tpc_hit : part.tpc_hits) {
+            for (TPCHit_tt &tpc_hit : part.tpc_hits) {
                 std::cout << "ParseCSVFiles.C ::    >> edep " << tpc_hit.edep << std::endl;
                 std::cout << "ParseCSVFiles.C ::    >> x,y,z " << tpc_hit.x << ", " << tpc_hit.y << ", " << tpc_hit.z << ", " << std::endl;
                 std::cout << "ParseCSVFiles.C ::    >> px,py,pz " << tpc_hit.x << ", " << tpc_hit.y << ", " << tpc_hit.z << ", "
