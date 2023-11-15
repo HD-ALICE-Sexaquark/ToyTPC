@@ -79,8 +79,8 @@ void ParseCSVFiles(Int_t run_n = 0) {
     std::vector<Event_tt> Events;
 
     // vector and map to link between eventID, trackID and main vector indices
-    std::vector<std::map<Int_t, Int_t>> map_event_index;  // map[eventID][trackID] = index
-    std::map<Int_t, Int_t> map_track_index;               // key = trackID, value = index
+    std::vector<std::map<Int_t, Int_t>> part_index;       // [eventID][trackID]
+    std::vector<std::map<Int_t, Int_t>> part_ndaughters;  // [eventID][trackID]
 
     /** Part 1a: Trajectories **/
 
@@ -95,12 +95,8 @@ void ParseCSVFiles(Int_t run_n = 0) {
     /* (Auxiliary variables) */
 
     Particle_tt aux_particle;
-    Event_tt aux_event;
     Int_t current_eventID;
     Int_t prev_eventID = -1;
-
-    std::vector<std::map<Int_t, Int_t>> map_event_ndaughters;  // map[eventID][trackID] = n_daughters
-    std::map<Int_t, Int_t> n_daughters;                        // key = trackID, value = n_daughters
 
     // read line by line ~ loop over particles
     TObjArray *token = nullptr;
@@ -119,21 +115,12 @@ void ParseCSVFiles(Int_t run_n = 0) {
         /*  [0] eventID     */ current_eventID = ((TString)(token->At(0)->GetName())).Atoi();
 
         if (current_eventID != prev_eventID) {
-            // if the event value changed, we're in a different event now
-            if (prev_eventID != -1) {
-                // then, store past event info into main vector, clean particles vector
-                aux_event.eventID = prev_eventID;
-                Events.push_back(aux_event);
-                aux_event.particles.clear();
-                // assign map of tracks->indices to corresponding event, clean
-                map_event_index.push_back(map_track_index);
-                map_track_index.clear();
-                // assign map of tracks->n_daughters to corresponding event, clean
-                map_event_ndaughters.push_back(n_daughters);
-                n_daughters.clear();
-            }
-            // now, we're inside another event
-            prev_eventID = current_eventID;
+            // resize vectors, because eventID starts at 0
+            Events.resize(current_eventID + 1);
+            part_index.resize(current_eventID + 1);
+            part_ndaughters.resize(current_eventID + 1);
+            Events.at(current_eventID).eventID = current_eventID;
+            prev_eventID = current_eventID;  // we're in a different event now
         }
 
         /*  [1] trackID     */ aux_particle.trackID = ((TString)(token->At(1)->GetName())).Atoi();
@@ -148,11 +135,11 @@ void ParseCSVFiles(Int_t run_n = 0) {
         /*  [-] is_primary  */ aux_particle.is_primary = aux_particle.parentID == 0;
         /* [10] charge      */ aux_particle.charge = ((TString)(token->At(10)->GetName())).Atoi();
 
-        aux_event.particles.push_back(aux_particle);
+        Events.at(current_eventID).particles.push_back(aux_particle);
 
         // update maps
-        map_track_index[aux_particle.trackID] = (Int_t)aux_event.particles.size() - 1;
-        n_daughters[aux_particle.parentID]++;
+        part_index[current_eventID][aux_particle.trackID] = (Int_t)Events.at(current_eventID).particles.size() - 1;
+        part_ndaughters[current_eventID][aux_particle.parentID]++;
     }  // end of reading file
 
     traj_file.close();
@@ -161,7 +148,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
     for (Event_tt &evt : Events) {
         for (Particle_tt &part : evt.particles) {
-            part.n_daughters = map_event_ndaughters[evt.eventID][part.trackID];
+            part.n_daughters = part_ndaughters[evt.eventID][part.trackID];
         }
     }
 
@@ -204,7 +191,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
         /* [7] process  */  // not used
 
         // get index from the track ID
-        aux_index = map_event_index[current_eventID][aux_track_id];
+        aux_index = part_index[current_eventID][aux_track_id];
 
         // store current hit info on corresponding index
         Events.at(current_eventID).particles.at(aux_index).its_hits.push_back(aux_its_hit);
@@ -252,7 +239,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
         /* [10] process  */  // not used
 
         // get index from the track ID
-        aux_index = map_event_index[current_eventID][aux_track_id];
+        aux_index = part_index[current_eventID][aux_track_id];
 
         // store current hit info on corresponding index
         Events.at(current_eventID).particles.at(aux_index).tpc_hits.push_back(aux_tpc_hit);
