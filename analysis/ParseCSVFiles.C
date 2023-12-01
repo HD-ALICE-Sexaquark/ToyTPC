@@ -3,14 +3,20 @@
 #include <map>
 #include <sstream>
 
+#include "Fit/Fitter.h"
+#include "Math/Functor.h"
 #include "TF1.h"
 #include "TFile.h"
+#include "TGraph.h"
 #include "TLorentzVector.h"
 #include "TMath.h"
 #include "TObjArray.h"
+#include "TRandom3.h"
 #include "TString.h"
 #include "TTree.h"
 #include "TVector3.h"
+
+/*** STRUCTURES ***/
 
 /*
  Container of ITS hit information.
@@ -65,13 +71,102 @@ struct Event_tt {
     std::vector<Particle_tt> particles;
 };
 
+/*** FUNCTIONS ***/
+
+/*
+ Smear px, py or pz
+ The parameters for sigma_p were obtained from the ALICE performance paper
+ - after extracting the points from Fig. 23
+ - using Eq. 14 to get sigma_pt/pt
+ - then made a linear fit on those values
+ (reference: Int. J. Mod. Phys. A 2014.29)
+ NOTE: it says resolution of pt, but I'm generalizing it for px,py,pz...
+ - Units: in GeV/c
+ */
+Double_t SmearMomentum(Double_t p, TRandom3 *rnd) {
+
+    std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> p = " << p << std::endl;
+
+    Double_t sigma_p = 0.0053 * p * p + 0.0032 * TMath::Abs(p);
+    std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> sigma_p = " << sigma_p << std::endl;
+
+    // protection
+    if (sigma_p < 1E-4) {
+        return p;
+    }
+
+    TF1 function_p("function_p", "gaus", 0., 10.);
+    function_p.SetParameter(0, 1.);
+    function_p.SetParameter(1, p);
+    function_p.SetParameter(2, sigma_p);
+
+    Double_t smeared_p = function_p.GetRandom(rnd);
+    std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> smeared_p = " << smeared_p << std::endl;
+
+    return smeared_p;
+}
+
+/*
+ Try to fit a circle from the TPC hits...
+ NOTE: currently not working...
+ */
+Bool_t FitCircle(const Int_t nnn, Double_t x[], Double_t y[], Double_t &radius) {
+
+    TGraph graph(nnn, x, y);
+
+    auto chi2Function = [&](const Double_t *par) {
+        // minimisation function computing the sum of squares of residuals looping at the graph points
+        Int_t np = graph.GetN();
+        Double_t f = 0;
+        Double_t *x = graph.GetX();
+        Double_t *y = graph.GetY();
+        for (Int_t i = 0; i < np; i++) {
+            Double_t u = x[i] - par[0];
+            Double_t v = y[i] - par[1];
+            Double_t dr = par[2] - TMath::Sqrt(u * u + v * v);
+            f += dr * dr;
+        }
+        return f;
+    };
+
+    // wrap chi2 function in a function object for the fit
+    // 3 is the number of fit parameters (size of array par)
+    ROOT::Math::Functor fcn(chi2Function, 3);
+    ROOT::Fit::Fitter fitter;
+    Double_t pStart[3] = {0, 0, 1};
+    fitter.SetFCN(fcn, pStart);
+    fitter.Config().ParSettings(0).SetName("x0");
+    fitter.Config().ParSettings(1).SetName("y0");
+    fitter.Config().ParSettings(2).SetName("R");
+
+    // do the fit
+    Bool_t ok = fitter.FitFCN();
+    if (!ok) {
+        Error("line3Dfit", "Line3D Fit failed");
+    }
+    const ROOT::Fit::FitResult &result = fitter.Result();
+    // result.Print(std::cout);
+
+    radius = result.Parameter(2);
+    return ok;
+}
+
+/*** MAIN ***/
+
 void ParseCSVFiles(Int_t run_n = 0) {
 
-    // set input/output filenames
+    // set input/output filenames -- hardcoded
     TString input_traj_file = Form("run%03d_traj.csv", run_n);
     TString input_its_file = Form("run%03d_its.csv", run_n);
     TString input_tpc_file = Form("run%03d_tpc.csv", run_n);
     TString output_filename = Form("run%03d_ana.root", run_n);
+
+    // prepare TRandom object, necessary later for smearing
+    TRandom3 *rnd = new TRandom3(0.);
+
+    // conversion factors
+    const Double_t MeVToGeV = 1E-3;
+    const Double_t GeVToMeV = 1E3;
 
     /*** Part 1: Read and Store Input ***/
 
@@ -257,14 +352,29 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
         for (Particle_tt &part : evt.particles) {
 
-            std::cout << "ParseCSVFiles.C :: part " << part.trackID << std::endl;
-            std::cout << "ParseCSVFiles.C :: >> pdg,is_primary " << part.PDGcode << ", " << part.is_primary << std::endl;
-            std::cout << "ParseCSVFiles.C :: >> parent,n_daughters " << part.parentID << ", " << part.n_daughters << std::endl;
-            std::cout << "ParseCSVFiles.C :: >> x,y,z " << part.x_ini << ", " << part.y_ini << ", " << part.z_ini << ", " << std::endl;
-            std::cout << "ParseCSVFiles.C :: >> px,py,pz " << part.px_ini << ", " << part.py_ini << ", " << part.pz_ini << ", "
-                      << std::endl;
-            std::cout << "ParseCSVFiles.C :: >> n_its_hits " << (Int_t)part.its_hits.size() << std::endl;
-            std::cout << "ParseCSVFiles.C :: >> n_tpc_hits " << (Int_t)part.tpc_hits.size() << std::endl;
+            if ((Int_t)part.tpc_hits.size() >= 100) {
+                std::cout << "ParseCSVFiles.C :: event,part " << evt.eventID << ", " << part.trackID << std::endl;
+                std::cout << "ParseCSVFiles.C :: >> pdg,is_primary " << part.PDGcode << ", " << part.is_primary << std::endl;
+                std::cout << "ParseCSVFiles.C :: >> parent,n_daughters " << part.parentID << ", " << part.n_daughters << std::endl;
+                std::cout << "ParseCSVFiles.C :: >> x,y,z " << part.x_ini << ", " << part.y_ini << ", " << part.z_ini << ", " << std::endl;
+                std::cout << "ParseCSVFiles.C :: >> px,py,pz " << part.px_ini << ", " << part.py_ini << ", " << part.pz_ini << ", "
+                          << std::endl;
+                std::cout << "ParseCSVFiles.C :: >> n_its_hits " << (Int_t)part.its_hits.size() << std::endl;
+                std::cout << "ParseCSVFiles.C :: >> n_tpc_hits " << (Int_t)part.tpc_hits.size() << std::endl;
+
+                Double_t tpc_x[(Int_t)part.tpc_hits.size()];
+                Double_t tpc_y[(Int_t)part.tpc_hits.size()];
+                for (Int_t hit_idx = 0; hit_idx < (Int_t)part.tpc_hits.size(); hit_idx++) {
+                    tpc_x[hit_idx] = part.tpc_hits[hit_idx].x;
+                    tpc_y[hit_idx] = part.tpc_hits[hit_idx].y;
+                }
+                Double_t radius;
+                FitCircle((Int_t)part.tpc_hits.size(), tpc_x, tpc_y, radius);
+                std::cout << "ParseCSVFiles.C :: >> radius " << radius << std::endl;
+                std::cout << "ParseCSVFiles.C :: >> pt_ini " << TMath::Sqrt(TMath::Power(part.px_ini, 2) + TMath::Power(part.py_ini, 2))
+                          << std::endl;
+                std::cout << "ParseCSVFiles.C :: >> pt (from radius) " << 0.3 * 0.2 * 0.1 * radius << std::endl;
+            }
 
             /*
             for (ITSHit_tt &its_hit : part.its_hits) {
@@ -285,4 +395,93 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
     /*** Part 2: Trees ***/
 
+    // prepare output
+    TFile *output_file = new TFile(output_filename, "RECREATE");
+    TTree *output_tree = new TTree("Events", "Events");
+
+    // set aux objects
+    Int_t aux_eventID;
+    std::vector<Int_t> aux_trackID;
+    std::vector<Int_t> aux_PDGcode;
+    std::vector<Bool_t> aux_isPrimary;
+    std::vector<Int_t> aux_parentID;
+    std::vector<Int_t> aux_nDaughters;
+    std::vector<Int_t> aux_nITShits;
+    std::vector<Int_t> aux_nTPChits;
+    std::vector<Float_t> aux_Px_ini;
+    std::vector<Float_t> aux_Py_ini;
+    std::vector<Float_t> aux_Pz_ini;
+    std::vector<Float_t> aux_Pt_ini;
+    std::vector<Float_t> aux_Pt_sme;
+    std::vector<Float_t> aux_Pt_rec;
+    std::vector<Float_t> aux_dEdx;
+
+    // set tree branches
+    output_tree->Branch("eventID", &aux_eventID);
+    output_tree->Branch("trackID", &aux_trackID);
+    output_tree->Branch("PDGcode", &aux_PDGcode);
+    output_tree->Branch("isPrimary", &aux_isPrimary);
+    output_tree->Branch("parentID", &aux_parentID);
+    output_tree->Branch("nDaughters", &aux_nDaughters);
+    output_tree->Branch("nITShits", &aux_nITShits);
+    output_tree->Branch("nTPChits", &aux_nTPChits);
+    output_tree->Branch("Px_ini", &aux_Px_ini);
+    output_tree->Branch("Py_ini", &aux_Py_ini);
+    output_tree->Branch("Pz_ini", &aux_Pz_ini);
+    output_tree->Branch("Pt_ini", &aux_Pt_ini);
+    output_tree->Branch("Pt_sme", &aux_Pt_sme);
+    output_tree->Branch("Pt_rec", &aux_Pt_rec);
+    output_tree->Branch("dEdx", &aux_dEdx);
+
+    for (Event_tt &evt : Events) {
+
+        aux_eventID = evt.eventID;
+
+        for (Particle_tt &part : evt.particles) {
+
+            // (cut)
+            if ((Int_t)part.tpc_hits.size() < 100) {
+                continue;
+            }
+
+            aux_trackID.push_back(part.trackID);
+            aux_PDGcode.push_back(part.PDGcode);
+            aux_isPrimary.push_back(part.is_primary);
+            aux_parentID.push_back(part.parentID);
+            aux_nDaughters.push_back(part.n_daughters);
+            aux_nITShits.push_back((Int_t)part.its_hits.size());
+            aux_nTPChits.push_back((Int_t)part.tpc_hits.size());
+            aux_Px_ini.push_back(part.px_ini);
+            aux_Py_ini.push_back(part.py_ini);
+            aux_Pz_ini.push_back(part.pz_ini);
+            aux_Pt_ini.push_back(TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini));
+            aux_Pt_sme.push_back(SmearMomentum(aux_Pt_ini.back() * MeVToGeV, rnd) * GeVToMeV);
+            aux_Pt_rec.push_back(0.);  // (pending)
+            aux_dEdx.push_back(0.);    // (pending)
+        }
+
+        // at the end of the event
+        if ((Int_t)aux_trackID.size()) output_tree->Fill();
+
+        // clear vectors
+        aux_trackID.clear();
+        aux_PDGcode.clear();
+        aux_isPrimary.clear();
+        aux_parentID.clear();
+        aux_nDaughters.clear();
+        aux_nITShits.clear();
+        aux_nTPChits.clear();
+        aux_Px_ini.clear();
+        aux_Py_ini.clear();
+        aux_Pz_ini.clear();
+        aux_Pt_ini.clear();
+        aux_Pt_sme.clear();
+        aux_Pt_rec.clear();
+        aux_dEdx.clear();
+    }
+
+    output_tree->Write();
+
+    output_file->Save();
+    output_file->Close();
 }  // end of macro
