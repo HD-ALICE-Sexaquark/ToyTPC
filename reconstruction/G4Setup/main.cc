@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
         output_filename_TPC = argv[4];
     } else {
         G4cerr << "main.cc :: ERROR: incorrect number of arguments." << G4endl;
-        G4cerr << "main.cc ::        -> for command-line mode, you need exactly one argument:" << G4endl;
+        G4cerr << "main.cc ::        -> for command-line mode, you need exactly four arguments:" << G4endl;
         G4cerr << "main.cc ::           ./main <input_filename> <output_filename_traj> <output_filename_ITS> <output_filename_TPC>"
                << G4endl;
         G4cerr << "main.cc ::        -> for graphic-interactive mode, you need no arguments:" << G4endl;
@@ -118,6 +118,11 @@ int main(int argc, char** argv) {
     // Get the pointer to the User Interface manager
     G4UImanager* UImanager = G4UImanager::GetUIpointer();
 
+    // Useful objects to check for Trigger Condition
+    const G4Run* run = nullptr;
+    const std::vector<const G4Event*>* events = nullptr;
+    G4int nKeptEvents;
+
     // Process macro or start UI session
     if (!ui) {
         // batch mode
@@ -129,7 +134,15 @@ int main(int argc, char** argv) {
         UImanager->ApplyCommand("/run/initialize");  // G4RunManager::Initialize().
         UImanager->ApplyCommand("/tracking/verbose 0");
         UImanager->ApplyCommand("/tracking/storeTrajectory 2");  // IMPORTANT!!
-        UImanager->ApplyCommand("/run/beamOn 1");
+        while (true) {
+            UImanager->ApplyCommand("/run/beamOn 1");
+            run = runManager ? runManager->GetCurrentRun() : nullptr;
+            events = run ? run->GetEventVector() : nullptr;
+            nKeptEvents = events ? (G4int)events->size() : 0;
+            if (nKeptEvents) {
+                break;
+            }
+        }
     } else {
         // graphical mode
         UImanager->ApplyCommand("/control/execute init_vis.mac");

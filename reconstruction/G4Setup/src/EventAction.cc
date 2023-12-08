@@ -92,65 +92,224 @@ void EventAction::BeginOfEventAction(const G4Event*) {
     G4cout << "tpcHC_id = " << tpcHC_id << G4endl;
 }
 
+/*
+ Connect trackIDs with their trajectories and TPC hits,
+ then apply the trigger condition
+ */
 void EventAction::EndOfEventAction(const G4Event* event) {
 
-    // get important objects
     auto eventManager = G4EventManager::GetEventManager();
 
     G4int eventID = event->GetEventID();
     G4cout << "> Event " << eventID << G4endl;
 
-    /* Debug --Trajectories */
+    /** Containers **/
 
-    G4TrajectoryContainer* trajectoryContainer = event->GetTrajectoryContainer();
-    G4int n_trajectories = 0;
-    if (trajectoryContainer) n_trajectories = trajectoryContainer->entries();
-    G4cout << "  >> N Trajectories: " << n_trajectories << G4endl;
-    /*
-        for (G4int i = 0; i < n_trajectories; i++) {
-            G4cout << "     >> Trajectory " << i                               //
-                   << ", Track " << (*trajectoryContainer)[i]->GetTrackID()    //
-                   << ", Parent " << (*trajectoryContainer)[i]->GetParentID()  //
-                   << ", PDG " << (*trajectoryContainer)[i]->GetPDGEncoding()  //
-                   << ", Charge " << (G4int)(*trajectoryContainer)[i]->GetCharge() << G4endl;
-        }
-    */
+    std::vector<G4int> primaries_trackID;
 
-    /* Debug -- ITS Hits */
+    std::map<G4int, G4int> PDGcode;                   // PDG codes, key: `trackID`
+    std::map<G4int, std::vector<G4int>> DaughtersID;  // `trackID` of daughters (as `std::vector`), key: `trackID`
+    std::map<G4int, G4ThreeVector> InitialPosition;   //  first recorded position vector, key: `trackID`
+    std::map<G4int, G4ThreeVector> FinalPosition;     // last recorded position vector, key: `trackID`
+
+    std::map<G4int, std::vector<G4ThreeVector>> TPC_Hits;          // vector of position vectors of hits, key: `trackID`
+    std::map<G4int, std::vector<G4ThreeVector>> TPC_HitsMomentum;  // vector of momentum vectors of hits, key: `trackID`
+    std::map<G4int, G4ThreeVector> PointedTowardsOrigin;           // position vector where it pointed towards origin, key: `trackID`
+
+    std::map<G4int, G4bool> StopsMidTPC;
+    std::map<G4int, G4bool> CrossesTPC;
+    std::map<G4int, G4bool> KinkInTPC;
+    std::map<G4int, G4bool> LoopsInTPC;
+    std::map<G4int, G4bool> KinkBeforeTPC;
+
+    /*** Debug -- ITS Hits ***/
 
     G4VHitsCollection* itsHC = GetHC(event, itsHC_id);
     G4int n_its_hits = 0;
     if (itsHC) n_its_hits = itsHC->GetSize();
     G4cout << "  >> N ITS Hits: " << n_its_hits << G4endl;
+
     /*
         InnerTrackingSystemHit* its_hit = nullptr;
         for (G4int i = 0; i < n_its_hits; i++) {
+
             its_hit = (InnerTrackingSystemHit*)itsHC->GetHit(i);
-            G4cout << "     >> Hit " << i                  //
-                   << ", Track " << its_hit->GetTrackID()  //
-                   << ", Layer " << its_hit->GetLayerNb() << G4endl;
+
+            G4cout << "     >> Hit " << i << ", Track " << its_hit->GetTrackID() << ", Layer " << its_hit->GetLayerNb() << G4endl;
         }
     */
 
-    /* Debug -- TPC Hits */
+    /*** Loop Over TPC Hits ***/
 
     G4VHitsCollection* tpcHC = GetHC(event, tpcHC_id);
     G4int n_tpc_hits = 0;
     if (tpcHC) n_tpc_hits = tpcHC->GetSize();
     G4cout << "  >> N TPC Hits: " << n_tpc_hits << G4endl;
-    /*
-        TimeProjectionChamberHit* tpc_hit = nullptr;
-        for (G4int i = 0; i < n_tpc_hits; i++) {
-            tpc_hit = (TimeProjectionChamberHit*)tpcHC->GetHit(i);
-            G4cout << "     >> Hit " << i                  //
-                   << ", Track " << tpc_hit->GetTrackID()  //
-                   << ", Time " << tpc_hit->GetTime() << G4endl;
-        }
-    */
 
-    // there's no trigger condition
-    StoreEvent(event);
-    eventManager->KeepTheCurrentEvent();
+    TimeProjectionChamberHit* tpc_hit = nullptr;
+    for (G4int i = 0; i < n_tpc_hits; i++) {
+
+        tpc_hit = (TimeProjectionChamberHit*)tpcHC->GetHit(i);
+
+        TPC_Hits[tpc_hit->GetTrackID()].push_back(tpc_hit->GetLocalPos());
+        TPC_HitsMomentum[tpc_hit->GetTrackID()].push_back(tpc_hit->GetMomentum());
+        /*
+            G4cout << "     >> Hit " << i << ", Track " << tpc_hit->GetTrackID() << ", Time " << tpc_hit->GetTime() << G4endl;
+        */
+    }
+
+    /*** Loop Over Trajectories ***/
+
+    G4TrajectoryContainer* trajectoryContainer = event->GetTrajectoryContainer();
+    G4int n_trajectories = 0;
+    if (trajectoryContainer) n_trajectories = trajectoryContainer->entries();
+    G4cout << "  >> N Trajectories: " << n_trajectories << G4endl;
+
+    for (G4int i = 0; i < n_trajectories; i++) {
+
+        /* If particle has no parent, it has to be a primary particle*/
+
+        if (!(*trajectoryContainer)[i]->GetParentID()) {
+            primaries_trackID.push_back((*trajectoryContainer)[i]->GetTrackID());
+        }
+
+        DaughtersID[(*trajectoryContainer)[i]->GetParentID()].push_back((*trajectoryContainer)[i]->GetTrackID());
+        PDGcode[(*trajectoryContainer)[i]->GetTrackID()] = (*trajectoryContainer)[i]->GetPDGEncoding();
+        InitialPosition[(*trajectoryContainer)[i]->GetTrackID()] = (*trajectoryContainer)[i]->GetPoint(0)->GetPosition();
+        FinalPosition[(*trajectoryContainer)[i]->GetTrackID()] =
+            (*trajectoryContainer)[i]->GetPoint((*trajectoryContainer)[i]->GetPointEntries() - 1)->GetPosition();
+        /*
+            G4cout << "     >> Trajectory " << i                               //
+               << ", Track " << (*trajectoryContainer)[i]->GetTrackID()    //
+               << ", Parent " << (*trajectoryContainer)[i]->GetParentID()  //
+               << ", PDG " << (*trajectoryContainer)[i]->GetPDGEncoding()  //
+               << ", Charge " << (G4int)(*trajectoryContainer)[i]->GetCharge() << G4endl;
+        */
+    }
+
+    /*** Trigger Condition ***/
+
+    const G4double TPC_InnerRadius = 78.8 * cm;
+    const G4double TPC_OuterRadius = 258. * cm;
+    const G4double ITS_OuterRadius = 39.49 * cm;
+
+    G4int n_muons, id_muon;
+    G4int n_neutrinos, id_neutrino;
+    G4bool same_origin;
+    G4bool origin_in_TPC;
+    G4bool origin_before_TPC;
+    G4bool muon_hits_TPC;
+    G4bool primary_passed_ITS;
+
+    for (G4int& trackID : primaries_trackID) {
+
+        /* Default values */
+
+        StopsMidTPC[trackID] = false;
+        CrossesTPC[trackID] = false;
+        KinkInTPC[trackID] = false;
+        LoopsInTPC[trackID] = false;
+
+        /* Condition A: Stops Mid TPC */
+
+        StopsMidTPC[trackID] = FinalPosition[trackID].perp() > TPC_InnerRadius && FinalPosition[trackID].perp() < TPC_OuterRadius;
+
+        /* Condition B: Passes TPC */
+
+        CrossesTPC[trackID] = FinalPosition[trackID].perp() > TPC_OuterRadius;
+
+        /* Condition C (and E): Kink Decay for Pions and Kaons within (or before) the TPC */
+
+        n_muons = 0;
+        n_neutrinos = 0;
+        id_muon = 0;
+        id_neutrino = 0;
+
+        if (abs(PDGcode[trackID]) == 211 || abs(PDGcode[trackID]) == 321) {
+
+            for (G4int& daughterID : DaughtersID[trackID]) {
+
+                if (!n_muons && abs(PDGcode[daughterID]) == 13) {
+                    n_muons++;
+                    id_muon = daughterID;
+                }
+                if (!n_neutrinos && abs(PDGcode[daughterID]) == 14) {
+                    n_neutrinos++;
+                    id_neutrino = daughterID;
+                }
+            }
+        }
+
+        same_origin = false;
+        origin_in_TPC = false;
+        origin_before_TPC = false;
+        muon_hits_TPC = false;
+
+        if (n_muons && n_neutrinos) {
+            same_origin = InitialPosition[id_neutrino].x() == InitialPosition[id_muon].x() &&  //
+                          InitialPosition[id_neutrino].y() == InitialPosition[id_muon].y() &&  //
+                          InitialPosition[id_neutrino].z() == InitialPosition[id_muon].z();
+            origin_in_TPC = InitialPosition[id_neutrino].perp() > TPC_InnerRadius && InitialPosition[id_neutrino].perp() < TPC_OuterRadius;
+            origin_before_TPC = InitialPosition[id_neutrino].perp() < TPC_InnerRadius;
+            muon_hits_TPC = (G4bool)TPC_Hits[id_muon].size();
+        }
+
+        KinkInTPC[trackID] = n_muons && n_neutrinos && same_origin && origin_in_TPC;
+
+        primary_passed_ITS = FinalPosition[trackID].perp() > ITS_OuterRadius;
+
+        KinkBeforeTPC[trackID] = n_muons && n_neutrinos && same_origin && origin_before_TPC && muon_hits_TPC && primary_passed_ITS;
+
+        /* Condition D: Loops after entering the TPC */
+
+        PointedTowardsOrigin[trackID].setX(0.);
+        PointedTowardsOrigin[trackID].setY(0.);
+        PointedTowardsOrigin[trackID].setZ(0.);
+
+        for (G4int idx_hit = 0; idx_hit < (G4int)TPC_Hits[trackID].size(); idx_hit++) {
+
+            G4ThreeVector curr_tpc_hit = TPC_Hits[trackID][idx_hit];
+            G4ThreeVector curr_tpc_hit_momentum = TPC_Hits[trackID][idx_hit];
+
+            /* Note: I'm not sure which units is the TPC Hit's momentum using */
+
+            if ((curr_tpc_hit.x() > 0. * cm && curr_tpc_hit.y() > 0. * cm &&           //
+                 curr_tpc_hit_momentum.x() < 0. && curr_tpc_hit_momentum.y() < 0.) ||  //
+                (curr_tpc_hit.x() > 0. * cm && curr_tpc_hit.y() < 0. * cm &&           //
+                 curr_tpc_hit_momentum.x() < 0. && curr_tpc_hit_momentum.y() > 0.) ||  //
+                (curr_tpc_hit.x() < 0. * cm && curr_tpc_hit.y() > 0. * cm &&           //
+                 curr_tpc_hit_momentum.x() > 0. && curr_tpc_hit_momentum.y() < 0.) ||  //
+                (curr_tpc_hit.x() < 0. * cm && curr_tpc_hit.y() < 0. * cm &&           //
+                 curr_tpc_hit_momentum.x() > 0. && curr_tpc_hit_momentum.y() > 0.)) {
+                PointedTowardsOrigin[trackID] = curr_tpc_hit;
+                break;
+            }
+        }
+
+        LoopsInTPC[trackID] = PointedTowardsOrigin[trackID].perp() > TPC_InnerRadius && TPC_Hits[trackID].size();
+
+        /* Debug */
+
+        G4cout << "trackID, PDGcode, A, B, C, D, E = "                         //
+               << trackID << ", " << PDGcode[trackID] << ", "                  //
+               << StopsMidTPC[trackID] << ", " << CrossesTPC[trackID] << ", "  //
+               << KinkInTPC[trackID] << ", " << LoopsInTPC[trackID] << ", " << KinkBeforeTPC[trackID] << G4endl;
+    }
+
+    /* We require all of the primaries to obey at least one condition */
+
+    G4int trigger_condition = std::all_of(primaries_trackID.begin(), primaries_trackID.end(),
+                                          [&](G4int trackID) {                                     //
+                                              return LoopsInTPC[trackID] || KinkInTPC[trackID] ||  //
+                                                     StopsMidTPC[trackID] || CrossesTPC[trackID] || KinkBeforeTPC[trackID];
+                                          });
+
+    if (trigger_condition) {
+        StoreEvent(event);
+        eventManager->KeepTheCurrentEvent();
+        // (debug)
+        G4cout << "event is stored!" << G4endl;
+    }
 }
 
 /*
