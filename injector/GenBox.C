@@ -15,9 +15,9 @@
 void GenBox(TString fOutputFilename = "../reconstruction/mc.csv") {
 
     // parameters
-    const Int_t n_times = 50;  // inject `n_times` particles per species
+    const Int_t n_times = 2;  // inject `n_times` particles per species
     std::vector<Int_t> pdgVector = {211, 321, 2212};
-    std::vector<Float_t> fPtMin = {0.05, 0.1, 0.15};   // (in GeV/c)
+    std::vector<Float_t> fPtMin = {0.05, 0.125, 0.2};  // (in GeV/c)
     std::vector<Float_t> fPtMax = {0.15, 0.25, 0.35};  // (in GeV/c)
     std::vector<Float_t> fYMin = {-1.25, -0.85, -0.7};
     std::vector<Float_t> fYMax = {1.25, 0.85, 0.7};
