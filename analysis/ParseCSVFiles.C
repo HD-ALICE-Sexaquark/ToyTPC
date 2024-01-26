@@ -3,8 +3,6 @@
 #include <map>
 #include <sstream>
 
-#include "Fit/Fitter.h"
-#include "Math/Functor.h"
 #include "TF1.h"
 #include "TFile.h"
 #include "TGraph.h"
@@ -15,6 +13,8 @@
 #include "TString.h"
 #include "TTree.h"
 #include "TVector3.h"
+
+#include "LeastSquaresCircleFit.h"
 
 /*** STRUCTURES ***/
 
@@ -106,51 +106,6 @@ Double_t SmearMomentum(Double_t p, TRandom3 *rnd) {
     return smeared_p;
 }
 
-/*
- Try to fit a circle from the TPC hits...
- NOTE: currently not working...
- */
-Bool_t FitCircle(const Int_t nnn, Double_t x[], Double_t y[], Double_t &radius) {
-
-    TGraph graph(nnn, x, y);
-
-    auto chi2Function = [&](const Double_t *par) {
-        // minimisation function computing the sum of squares of residuals looping at the graph points
-        Int_t np = graph.GetN();
-        Double_t f = 0;
-        Double_t *x = graph.GetX();
-        Double_t *y = graph.GetY();
-        for (Int_t i = 0; i < np; i++) {
-            Double_t u = x[i] - par[0];
-            Double_t v = y[i] - par[1];
-            Double_t dr = par[2] - TMath::Sqrt(u * u + v * v);
-            f += dr * dr;
-        }
-        return f;
-    };
-
-    // wrap chi2 function in a function object for the fit
-    // 3 is the number of fit parameters (size of array par)
-    ROOT::Math::Functor fcn(chi2Function, 3);
-    ROOT::Fit::Fitter fitter;
-    Double_t pStart[3] = {0, 0, 1};
-    fitter.SetFCN(fcn, pStart);
-    fitter.Config().ParSettings(0).SetName("x0");
-    fitter.Config().ParSettings(1).SetName("y0");
-    fitter.Config().ParSettings(2).SetName("R");
-
-    // do the fit
-    Bool_t ok = fitter.FitFCN();
-    if (!ok) {
-        Error("line3Dfit", "Line3D Fit failed");
-    }
-    const ROOT::Fit::FitResult &result = fitter.Result();
-    // result.Print(std::cout);
-
-    radius = result.Parameter(2);
-    return ok;
-}
-
 /*** MAIN ***/
 
 void ParseCSVFiles(Int_t run_n = 0) {
@@ -167,6 +122,9 @@ void ParseCSVFiles(Int_t run_n = 0) {
     // conversion factors
     const Double_t MeVToGeV = 1E-3;
     const Double_t GeVToMeV = 1E3;
+
+    const Double_t cmTom = 1E-2;
+    const Double_t mTocm = 1E2;
 
     /*** Part 1: Read and Store Input ***/
 
@@ -187,8 +145,6 @@ void ParseCSVFiles(Int_t run_n = 0) {
         return;
     }
 
-    /* (Auxiliary variables) */
-
     Particle_tt aux_particle;
     Int_t current_eventID;
     Int_t prev_eventID = -1;
@@ -207,7 +163,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
         // convert the line into a TString, then split
         token = ((TString)line).Tokenize(",");
 
-        /*  [0] eventID     */ current_eventID = ((TString)(token->At(0)->GetName())).Atoi();
+        current_eventID = ((TString)(token->At(0)->GetName())).Atoi();  // [0] eventID
 
         if (current_eventID != prev_eventID) {
             // resize vectors, because eventID starts at 0
@@ -218,17 +174,17 @@ void ParseCSVFiles(Int_t run_n = 0) {
             prev_eventID = current_eventID;  // we're in a different event now
         }
 
-        /*  [1] trackID     */ aux_particle.trackID = ((TString)(token->At(1)->GetName())).Atoi();
-        /*  [2] PDGcode     */ aux_particle.PDGcode = ((TString)(token->At(2)->GetName())).Atoi();
-        /*  [3] x_ini       */ aux_particle.x_ini = ((TString)(token->At(3)->GetName())).Atof();
-        /*  [4] y_ini       */ aux_particle.y_ini = ((TString)(token->At(4)->GetName())).Atof();
-        /*  [5] z_ini       */ aux_particle.z_ini = ((TString)(token->At(5)->GetName())).Atof();
-        /*  [6] px_ini      */ aux_particle.px_ini = ((TString)(token->At(6)->GetName())).Atof();
-        /*  [7] py_ini      */ aux_particle.py_ini = ((TString)(token->At(7)->GetName())).Atof();
-        /*  [8] pz_ini      */ aux_particle.pz_ini = ((TString)(token->At(8)->GetName())).Atof();
-        /*  [9] parentID    */ aux_particle.parentID = ((TString)(token->At(9)->GetName())).Atoi();
-        /*  [-] is_primary  */ aux_particle.is_primary = aux_particle.parentID == 0;
-        /* [10] charge      */ aux_particle.charge = ((TString)(token->At(10)->GetName())).Atoi();
+        aux_particle.trackID = ((TString)(token->At(1)->GetName())).Atoi();   //     [1] trackID
+        aux_particle.PDGcode = ((TString)(token->At(2)->GetName())).Atoi();   //     [2] PDGcode
+        aux_particle.x_ini = ((TString)(token->At(3)->GetName())).Atof();     //     [3] x_ini
+        aux_particle.y_ini = ((TString)(token->At(4)->GetName())).Atof();     //     [4] y_ini
+        aux_particle.z_ini = ((TString)(token->At(5)->GetName())).Atof();     //     [5] z_ini
+        aux_particle.px_ini = ((TString)(token->At(6)->GetName())).Atof();    //     [6] px_ini
+        aux_particle.py_ini = ((TString)(token->At(7)->GetName())).Atof();    //     [7] py_ini
+        aux_particle.pz_ini = ((TString)(token->At(8)->GetName())).Atof();    //     [8] pz_ini
+        aux_particle.parentID = ((TString)(token->At(9)->GetName())).Atoi();  //     [9] parentID
+        aux_particle.is_primary = aux_particle.parentID == 0;                 //     [-] is_primary
+        aux_particle.charge = ((TString)(token->At(10)->GetName())).Atoi();   //    [10] charge
 
         Events.at(current_eventID).particles.push_back(aux_particle);
 
@@ -248,8 +204,6 @@ void ParseCSVFiles(Int_t run_n = 0) {
     }
 
     /** Part 1b: ITS Hits **/
-
-    /* (Auxiliary variables) */
 
     ITSHit_tt aux_its_hit;
     Int_t aux_track_id;
@@ -276,14 +230,13 @@ void ParseCSVFiles(Int_t run_n = 0) {
         // convert the line into a TString, then split
         token = ((TString)line).Tokenize(",");
 
-        /* [0] eventID  */ current_eventID = ((TString)(token->At(0)->GetName())).Atoi();
-        /* [1] trackID  */ aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();
-        /* [2] layerNb  */ aux_its_hit.layerNb = ((TString)(token->At(2)->GetName())).Atoi();
-        /* [3] x        */ aux_its_hit.x = ((TString)(token->At(3)->GetName())).Atof();
-        /* [4] y        */ aux_its_hit.y = ((TString)(token->At(4)->GetName())).Atof();
-        /* [5] z        */ aux_its_hit.z = ((TString)(token->At(5)->GetName())).Atof();
-        /* [6] edep     */ aux_its_hit.edep = ((TString)(token->At(6)->GetName())).Atof();
-        /* [7] process  */  // not used
+        current_eventID = ((TString)(token->At(0)->GetName())).Atoi();      // [0] eventID
+        aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();         // [1] trackID
+        aux_its_hit.layerNb = ((TString)(token->At(2)->GetName())).Atoi();  // [2] layerNb
+        aux_its_hit.x = ((TString)(token->At(3)->GetName())).Atof();        // [3] x
+        aux_its_hit.y = ((TString)(token->At(4)->GetName())).Atof();        // [4] y
+        aux_its_hit.z = ((TString)(token->At(5)->GetName())).Atof();        // [5] z
+        aux_its_hit.edep = ((TString)(token->At(6)->GetName())).Atof();     // [6] edep
 
         // get index from the track ID
         aux_index = part_index[current_eventID][aux_track_id];
@@ -295,8 +248,6 @@ void ParseCSVFiles(Int_t run_n = 0) {
     its_file.close();
 
     /** Part 1c: TPC Hits **/
-
-    /* (Auxiliary variables) */
 
     TPCHit_tt aux_tpc_hit;
 
@@ -321,17 +272,16 @@ void ParseCSVFiles(Int_t run_n = 0) {
         // convert the line into a TString, then split
         token = ((TString)line).Tokenize(",");
 
-        /*  [0] eventID  */ current_eventID = ((TString)(token->At(0)->GetName())).Atoi();
-        /*  [1] trackID  */ aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();
-        /*  [2] x        */ aux_tpc_hit.x = ((TString)(token->At(2)->GetName())).Atof();
-        /*  [3] y        */ aux_tpc_hit.y = ((TString)(token->At(3)->GetName())).Atof();
-        /*  [4] z        */ aux_tpc_hit.z = ((TString)(token->At(4)->GetName())).Atof();
-        /*  [5] px       */ aux_tpc_hit.px = ((TString)(token->At(5)->GetName())).Atof();
-        /*  [6] py       */ aux_tpc_hit.py = ((TString)(token->At(6)->GetName())).Atof();
-        /*  [7] pz       */ aux_tpc_hit.pz = ((TString)(token->At(7)->GetName())).Atof();
-        /*  [8] time     */ aux_tpc_hit.time = ((TString)(token->At(8)->GetName())).Atof();
-        /*  [9] edep     */ aux_tpc_hit.edep = ((TString)(token->At(9)->GetName())).Atof();
-        /* [10] process  */  // not used
+        current_eventID = ((TString)(token->At(0)->GetName())).Atoi();   //   [0] eventID
+        aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();      //   [1] trackID
+        aux_tpc_hit.x = ((TString)(token->At(2)->GetName())).Atof();     //   [2] x
+        aux_tpc_hit.y = ((TString)(token->At(3)->GetName())).Atof();     //   [3] y
+        aux_tpc_hit.z = ((TString)(token->At(4)->GetName())).Atof();     //   [4] z
+        aux_tpc_hit.px = ((TString)(token->At(5)->GetName())).Atof();    //   [5] px
+        aux_tpc_hit.py = ((TString)(token->At(6)->GetName())).Atof();    //   [6] py
+        aux_tpc_hit.pz = ((TString)(token->At(7)->GetName())).Atof();    //   [7] pz
+        aux_tpc_hit.time = ((TString)(token->At(8)->GetName())).Atof();  //   [8] time
+        aux_tpc_hit.edep = ((TString)(token->At(9)->GetName())).Atof();  //   [9] edep
 
         // get index from the track ID
         aux_index = part_index[current_eventID][aux_track_id];
@@ -362,32 +312,36 @@ void ParseCSVFiles(Int_t run_n = 0) {
                 std::cout << "ParseCSVFiles.C :: >> n_its_hits " << (Int_t)part.its_hits.size() << std::endl;
                 std::cout << "ParseCSVFiles.C :: >> n_tpc_hits " << (Int_t)part.tpc_hits.size() << std::endl;
 
+                /* Fit TPC hits to a circle */
+
                 Double_t tpc_x[(Int_t)part.tpc_hits.size()];
                 Double_t tpc_y[(Int_t)part.tpc_hits.size()];
                 for (Int_t hit_idx = 0; hit_idx < (Int_t)part.tpc_hits.size(); hit_idx++) {
                     tpc_x[hit_idx] = part.tpc_hits[hit_idx].x;
                     tpc_y[hit_idx] = part.tpc_hits[hit_idx].y;
                 }
-                Double_t radius;
-                FitCircle((Int_t)part.tpc_hits.size(), tpc_x, tpc_y, radius);
+                Double_t x_c, y_c, radius;
+                LeastSquaresCircleFit((Int_t)part.tpc_hits.size(), tpc_x, tpc_y, x_c, y_c, radius);
+
                 std::cout << "ParseCSVFiles.C :: >> radius " << radius << std::endl;
-                std::cout << "ParseCSVFiles.C :: >> pt_ini " << TMath::Sqrt(TMath::Power(part.px_ini, 2) + TMath::Power(part.py_ini, 2))
-                          << std::endl;
-                std::cout << "ParseCSVFiles.C :: >> pt (from radius) " << 0.3 * 0.2 * 0.1 * radius << std::endl;
+                std::cout << "ParseCSVFiles.C :: >> pt_ini "
+                          << TMath::Sqrt(TMath::Power(part.px_ini, 2) + TMath::Power(part.py_ini, 2)) * MeVToGeV << std::endl;
+                std::cout << "ParseCSVFiles.C :: >> pt (from radius) " << 0.3 * 0.2 * radius * cmTom << std::endl;
             }
 
             /*
-            for (ITSHit_tt &its_hit : part.its_hits) {
-                std::cout << "ParseCSVFiles.C ::    >> layer " << its_hit.layerNb << std::endl;
-                std::cout << "ParseCSVFiles.C ::    >> edep " << its_hit.edep << std::endl;
-                std::cout << "ParseCSVFiles.C ::    >> x,y,z " << its_hit.x << ", " << its_hit.y << ", " << its_hit.z << ", " << std::endl;
-            }
-            for (TPCHit_tt &tpc_hit : part.tpc_hits) {
-                std::cout << "ParseCSVFiles.C ::    >> edep " << tpc_hit.edep << std::endl;
-                std::cout << "ParseCSVFiles.C ::    >> x,y,z " << tpc_hit.x << ", " << tpc_hit.y << ", " << tpc_hit.z << ", " << std::endl;
-                std::cout << "ParseCSVFiles.C ::    >> px,py,pz " << tpc_hit.x << ", " << tpc_hit.y << ", " << tpc_hit.z << ", "
-                          << std::endl;
-            }
+                for (ITSHit_tt &its_hit : part.its_hits) {
+                    std::cout << "ParseCSVFiles.C ::    >> layer " << its_hit.layerNb << std::endl;
+                    std::cout << "ParseCSVFiles.C ::    >> edep " << its_hit.edep << std::endl;
+                    std::cout << "ParseCSVFiles.C ::    >> x,y,z " << its_hit.x << ", " << its_hit.y << ", " << its_hit.z << ", " <<
+               std::endl;
+                }
+                for (TPCHit_tt &tpc_hit : part.tpc_hits) {
+                    std::cout << "ParseCSVFiles.C ::    >> edep " << tpc_hit.edep << std::endl;
+                    std::cout << "ParseCSVFiles.C ::    >> x,y,z " << tpc_hit.x << ", " << tpc_hit.y << ", " << tpc_hit.z << ", " <<
+               std::endl; std::cout << "ParseCSVFiles.C ::    >> px,py,pz " << tpc_hit.x << ", " << tpc_hit.y << ", " << tpc_hit.z << ", "
+               << std::endl;
+                }
             */
         }
         std::cout << "ParseCSVFiles.C :: " << std::endl;
