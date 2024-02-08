@@ -45,3 +45,12 @@
 /gui/addButton viewer "Flush viewer (= refresh + update)" "/vis/viewer/flush"
 /gui/addButton viewer "Update scene" "/vis/scene/notifyHandlers"
 #
+# Style
+/gui/addMenu style Style
+/gui/addButton style "Background Color = Black" "/vis/viewer/set/background white"
+/gui/addButton style "Background Color = Grey" "/vis/viewer/set/background grey"
+/gui/addButton style "Background Color = White" "/vis/viewer/set/background white"
+/gui/addButton style "Global Line Width Scale = 1" "/vis/viewer/set/globalLineWidthScale 2"
+/gui/addButton style "Global Line Width Scale = 2" "/vis/viewer/set/globalLineWidthScale 2"
+/gui/addButton style "Global Line Width Scale = 3" "/vis/viewer/set/globalLineWidthScale 2"
+/gui/addButton style "Set ITS to Black" "/vis/geometry/set/colour Layer_LV 0 0 0 0"

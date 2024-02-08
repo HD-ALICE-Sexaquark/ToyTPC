@@ -1,17 +1,16 @@
-**LowPtTracksProject**
-======================
+# **LowPtTracksProject**
 
 Generation and reconstruction of low-pT charged particles (pions, kaons, protons) into a toy simulation of the **ITS2** and **TPC** of **ALICE**, under none or low magnetic field.
 
 ## **reconstruction**
 
-* **Description:** Modification of the example `B2a` of **GEANT4**. (_will be extended later_)
+- **Description:** Modification of the example `B2a` of **GEANT4**. (_will be extended later_)
 
-* **Requirements:**
+- **Requirements:**
 
-  * GEANT4
+  - GEANT4
 
-* **Interactive usage via Graphical User Interface:**
+- **Interactive usage via Graphical User Interface:**
 
   1. Enter the `reconstruction` dir and build with `bash build.sh`
   2. Execute with `bash run_gui.sh`
@@ -19,17 +18,28 @@ Generation and reconstruction of low-pT charged particles (pions, kaons, protons
      1. Press the `/run/beamOn 1` button to inject and propagate particles from the standard input file `reconstruction/mc.csv` (input file can be changed with commands below). **IMPORTANT**: don't forget to set the magnetic field if needed (see commands below).
      2. Or, if you want to inject a single particle, you can use the commands `/ALICE/pdg_single_part` and `/ALICE/py_single_part` (see below) to set the particle's properties and to not input from file. Then, you can press the `/run/beamOn 1` button to inject and propagate it.
 
-  * **Available commands**:
+  - **Available menus**:
 
-    * `/ALICE/input_file <filename>` : set input file (default value: `reconstruction/mc.csv`)
-    * `/ALICE/traj_file <filename>` : set output file containing trajectories info (default value: `reconstruction/event<event_id>_traj.csv`)
-    * `/ALICE/its_file <filename>` : set output file containing info of hits on the ITS2 (default value: `reconstruction/event<event_id>_its.csv`)
-    * `/ALICE/tpc_file <filename>` : set output file containing info of hits on the TPC (default value: `reconstruction/event<event_id>_tpc.csv`)
-    * `/ALICE/pdg_single_part <pdg_code>` : disables input from file, set a single particle instead with the chosen PDG code
-    * `/ALICE/py_single_part <py> <units>` : y-component of the momentum of the single particle to be injected
-    * `/globalField/setValue <mag_field_vector> <units>` : set magnetic field (default value `0 0 0`)
+    - **Single Particle**: a single particle will be injected with just Py component, choose species "pion / kaon / proton" and momentum magnitude "Py = 25 / 50 / 75 / 100 / 150 / 200 / 225 / 250 / 300 MeV/c"
 
-* **Command-line/terminal usage:**
+    - **Magnetic Field**: choose magnitude of z-component of magnetic field.
+
+    - **Viewer** : viewer-related options.
+
+    - **Style**: style-related options.
+
+  - **Available commands**:
+
+    - `/ALICE/input_file <filename>` : set input file (default value: `reconstruction/mc.csv`)
+    - `/ALICE/traj_file <filename>` : set output file containing trajectories info (default value: `reconstruction/event<event_id>_traj.csv`)
+    - `/ALICE/its_file <filename>` : set output file containing info of hits on the ITS2 (default value: `reconstruction/event<event_id>_its.csv`)
+    - `/ALICE/tpc_file <filename>` : set output file containing info of hits on the TPC (default value: `reconstruction/event<event_id>_tpc.csv`)
+    - `/ALICE/pdg_single_part <pdg_code>` : disables input from file, set a single particle instead with the chosen PDG code
+    - `/ALICE/py_single_part <py> <units>` : y-component of the momentum of the single particle to be injected
+    - `/globalField/setValue <mag_field_vector> <units>` : set magnetic field (default value `0 0 0`)
+    - `/vis/ogl/export <filename>.<extension>` : export a screenshot of current view as an image file
+
+- **Command-line/terminal usage:**
 
   1. Build with `bash build.sh`
   2. Enter `G4Setup_build/`
@@ -38,36 +48,36 @@ Generation and reconstruction of low-pT charged particles (pions, kaons, protons
      ./main <MC_CSV> <TRAJ_CSV> <ITS_CSV> <TPC_CSV>
      ```
      where:
-     * `<MC_CSV>` : path of input file with MC particles (format described below)
-     * `<TRAJ_CSV>` : path of output file containing trajectories info (format described below)
-     * `<ITS_CSV>` : path of output file containing info of hits on the ITS2 (format described below)
-     * `<TPC_CSV>` : path of output file containing info of hits on the TPC (format described below)
+     - `<MC_CSV>` : path of input file with MC particles (format described below)
+     - `<TRAJ_CSV>` : path of output file containing trajectories info (format described below)
+     - `<ITS_CSV>` : path of output file containing info of hits on the ITS2 (format described below)
+     - `<TPC_CSV>` : path of output file containing info of hits on the TPC (format described below)
 
-* **Input:**
+- **Input:**
 
-  * MC-generated particles file (as in `reconstruction/mc.csv`) with the following format (which corresponds to the output of `generator/` and `injector/`):
+  - MC-generated particles file (as in `reconstruction/mc.csv`) with the following format (which corresponds to the output of `generator/` and `injector/`):
 
   ```
   PDG Code, Px (GeV/c), Py (GeV/c), Pz (GeV/c)
   ```
 
-* **Output:**
+- **Output:**
 
   Three files will be output. Their information can be connected (or linked) via the variable `trackID`.
 
-  * `eventXX_its.csv` contains the ITS2 hits information, where each line correspond to a different **hit** with the following format:
+  - `eventXX_its.csv` contains the ITS2 hits information, where each line correspond to a different **hit** with the following format:
 
   ```
   trackID, layer number, x (cm), y (cm), z (cm), deposited energy (MeV), generation process
   ```
 
-  * `eventXX_tpc.csv` contains the TPC hits information, where each line correspond to a different **hit** with the following format:
+  - `eventXX_tpc.csv` contains the TPC hits information, where each line correspond to a different **hit** with the following format:
 
   ```
   trackID, x (cm), y (cm), z (cm), Px (MeV/c), Py (MeV/c), Pz (MeV/c), time (ns), deposited energy (MeV), generation process
   ```
 
-  * `eventXX_traj.csv` contains the trajectories (or true particle) information, where each line correspond to a different **particle** with the following format:
+  - `eventXX_traj.csv` contains the trajectories (or true particle) information, where each line correspond to a different **particle** with the following format:
 
   ```
   trackID, PDG Code, initial x (cm), initial y (cm), initial z (cm), initial Px (MeV/c), initial Py (MeV/c), initial Pz (MeV/c), parentID, charge
@@ -75,21 +85,21 @@ Generation and reconstruction of low-pT charged particles (pions, kaons, protons
 
 ## **injector**
 
-* **Requirements:**
+- **Requirements:**
 
-  * ROOT
+  - ROOT
 
-* **Description:**
+- **Description:**
 
   ROOT macro that generates positive pions, positive kaons, protons, and their corresponding anti-particles, within an uniform distribution in transverse momentum, rapidity and azimuthal angle. It's currently set up to repeat `n_times`. Information is output in a `.csv` file.
 
-* **Usage:**
+- **Usage:**
 
   ```
   root -l -b -q 'injector/GenBox.C("<output_file>")'
   ```
 
-* **Output:**
+- **Output:**
 
   A single CSV file called will be generated, where each line correspond to a different **particle** with the following format:
 
@@ -99,14 +109,14 @@ Generation and reconstruction of low-pT charged particles (pions, kaons, protons
 
 ## **tools**
 
-* `send_production.sh` -- bash script to send simulation jobs in batches, via **HTCondor**.
+- `send_production.sh` -- bash script to send simulation jobs in batches, via **HTCondor**.
 
-  * **Requirements**:
+  - **Requirements**:
 
-    * ROOT
-    * GEANT4
+    - ROOT
+    - GEANT4
 
-  * **Usage**:
+  - **Usage**:
 
     ```
     ./send_production.sh --sim_dir <sim_dir> --run1 <run1> --run2 <run2> --serv <serv> --outsd <>
@@ -127,40 +137,43 @@ Generation and reconstruction of low-pT charged particles (pions, kaons, protons
     ./send_production.sh --run1 1 --run2 100 --serv 10 --outsd 001
     ```
 
-  * **Hard-coded parameters**:
+  - **Hard-coded parameters**:
 
-    * `OUTPUT_DIR` : top output directory
-    * `N_EVENTS_PER_RUN` : number of events per run (recommended: 100)
+    - `OUTPUT_DIR` : top output directory
+    - `N_EVENTS_PER_RUN` : number of events per run (recommended: 100)
 
-* `merge_files.sh` -- merge every `eventX_mc.csv`, `eventX_traj.csv`, `eventX_its.csv` or `eventX_tpc.csv` within a run directory `<run_dir>` into a single `runX_mc.csv`, `runX_traj.csv`, `runX_its.csv`, or `runX_tpc.csv` (respectively) by adding the `eventID` as the first column.
+- `merge_files.sh` -- merge every `eventX_mc.csv`, `eventX_traj.csv`, `eventX_its.csv` or `eventX_tpc.csv` within a run directory `<run_dir>` into a single `runX_mc.csv`, `runX_traj.csv`, `runX_its.csv`, or `runX_tpc.csv` (respectively) by adding the `eventID` as the first column.
 
-  * **Usage**: `./merge_files.sh <run_dir>`
+  - **Usage**: `./merge_files.sh <run_dir>`
 
 ## **analysis**
 
 (_description pending_)
 
-* **Usage:** `root -l -b -q ParseCSVFiles(<run_n>)`, where `<run_n>` will read the respective `run<run_n>_traj.csv`, `run<run_n>_its.csv`, `run<run_n>_tpc.csv` files, and it will output a single `run<run_n>_ana.root` file.
+- **Usage:** `root -l -b -q ParseCSVFiles(<run_n>)`, where `<run_n>` will read the respective `run<run_n>_traj.csv`, `run<run_n>_its.csv`, `run<run_n>_tpc.csv` files, and it will output a single `run<run_n>_ana.root` file.
 
 ## **generator**
 
 (_deprecated_)
 
-* **Requirements:** PYTHIA8 (can be easily installed with `generator/install_pythia.sh`)
+- **Requirements:** PYTHIA8 (can be easily installed with `generator/install_pythia.sh`)
 
-* **Usage:**
+- **Usage:**
 
   ```
   ./main_GenCollision --n <n> --config <config_file> --output <output_dir>
   ```
-  where:
-  * `--n <n>` : number of events to generate
-  * `--config <config_file>` : input configuration file (mandatory), should look like `generator/config_pp.cmnd`
-  * `--output <output_dir>` : output directory
 
-* **Output:**
+  where:
+
+  - `--n <n>` : number of events to generate
+  - `--config <config_file>` : input configuration file (mandatory), should look like `generator/config_pp.cmnd`
+  - `--output <output_dir>` : output directory
+
+- **Output:**
 
   A single file called `mc.csv` will be generated in case the number of events is 1, otherwise one `eventX_mc.csv` file will be generated per each event. In these files, each line correspond to a different **final-state particle** with the following format:
+
   ```
   PDG Code, Px (GeV/c), Py (GeV/c), Pz (GeV/c)
   ```
