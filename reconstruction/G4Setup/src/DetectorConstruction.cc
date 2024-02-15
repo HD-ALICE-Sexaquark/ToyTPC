@@ -231,8 +231,8 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes() {
     /*** Visualization Attributes ***/
 
     G4VisAttributes* boxVisAtt = new G4VisAttributes(G4Colour(1.0, 1.0, 1.0));    // white
-    G4VisAttributes* layerVisAtt = new G4VisAttributes(G4Colour(1.0, 1.0, 0.0));  // yellow
-    G4VisAttributes* tpcVisAtt = new G4VisAttributes(G4Colour(1.0, 0.647, 0.0));  // orange
+    G4VisAttributes* layerVisAtt = new G4VisAttributes(G4Colour(0.5, 0.0, 1.0));  // violet
+    G4VisAttributes* tpcVisAtt = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5));    // gray
 
     World_LV->SetVisAttributes(boxVisAtt);
     for (G4int layerNo = 0; layerNo < NLayersITS; layerNo++) Layer_LV[layerNo]->SetVisAttributes(layerVisAtt);
@@ -281,12 +281,12 @@ void DetectorConstruction::SetMaxStep(G4double maxStep) {
     if (fStepLimit_ITS && maxStep > 0.) fStepLimit_ITS->SetMaxAllowedStep(maxStep);
 }
 
-
-void DetectorConstruction::SetMagneticField(G4double magnitude_in_z)
-{
+void DetectorConstruction::SetMagneticField(G4double magnitude_in_z) {
     G4ThreeVector newFieldValue(0., 0., magnitude_in_z);
-    if (fMagFieldMessenger) fMagFieldMessenger->SetFieldValue(newFieldValue);
-    else G4cerr << "Magnetic Field Messenger Not Found." << G4endl;
+    if (fMagFieldMessenger)
+        fMagFieldMessenger->SetFieldValue(newFieldValue);
+    else
+        G4cerr << "Magnetic Field Messenger Not Found." << G4endl;
 }
 
 void DetectorConstruction::SetCheckOverlaps(G4bool checkOverlaps) { fCheckOverlaps = checkOverlaps; }

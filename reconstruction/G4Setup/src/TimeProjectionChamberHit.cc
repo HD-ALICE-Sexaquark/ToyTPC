@@ -77,7 +77,7 @@ void TimeProjectionChamberHit::Draw() {
     G4Circle circle(fWorldPos);
     circle.SetScreenSize(2);
     circle.SetFillStyle(G4Circle::filled);
-    G4Colour colour(1., 0.647, 0.);  // orange
+    G4Colour colour(1., 0.5, 0.);  // orange
     G4VisAttributes attribs(colour);
     circle.SetVisAttributes(attribs);
     visManager->Draw(circle);
