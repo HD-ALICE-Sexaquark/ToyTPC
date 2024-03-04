@@ -59,6 +59,7 @@
 /gui/addButton style "Global Marker Scale = 1" "/vis/viewer/set/globalMarkerScale 1"
 /gui/addButton style "Global Marker Scale = 1.5" "/vis/viewer/set/globalMarkerScale 1.5"
 /gui/addButton style "Global Marker Scale = 2" "/vis/viewer/set/globalMarkerScale 2"
+/gui/addButton style "Global Marker Scale = 2.5" "/vis/viewer/set/globalMarkerScale 2.5"
 /gui/addButton style "Set ITS to Black" "/vis/geometry/set/colour Layer_LV 0 0 0 0"
 /gui/addButton style "Set ITS to Gold" "/vis/geometry/set/colour Layer_LV 0 1.0 0.843 0."
 /gui/addButton style "Set Step Points to Cyan" "/vis/modeling/trajectories/drawByCharge-0/default/setStepPtsColour cyan"
