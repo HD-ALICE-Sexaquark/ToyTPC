@@ -9,7 +9,7 @@
 */
 Double_t HelixMinFcn(Int_t N, Double_t *x, Double_t *y, Double_t *z, Double_t x_c, Double_t y_c, Double_t r, Double_t omega, Double_t phi) {
     Double_t dx, dy;
-    Double_t res = 0.;
+    Double_t res = 0.;  // residual
     for (Int_t i = 0; i < N; i++) {
         dx = x[i] - x_c - r * TMath::Cos(omega * z[i] + phi);
         dy = y[i] - y_c - r * TMath::Sin(omega * z[i] + phi);

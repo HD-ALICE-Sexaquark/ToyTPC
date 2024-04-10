@@ -1,4 +1,3 @@
-#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -142,7 +141,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
         // (protection)
         if (line == "") {
-            std::cerr << "ParseCSVFiles.C :: WARNING :: Line empty, skipping..." << std::endl;
+            std::cerr << "ParseCSVFiles.C :: WARNING :: Skipping empty line..." << std::endl;
             continue;
         }
 
@@ -210,7 +209,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
         // (protection)
         if (line == "") {
-            std::cerr << "ParseCSVFiles.C :: WARNING :: Line empty, skipping..." << std::endl;
+            std::cerr << "ParseCSVFiles.C :: WARNING :: Skipping empty line..." << std::endl;
             continue;
         }
 
@@ -252,7 +251,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
         // (protection)
         if (line == "") {
-            std::cerr << "ParseCSVFiles.C :: WARNING :: Line empty, skipping..." << std::endl;
+            std::cerr << "ParseCSVFiles.C :: WARNING :: Skipping empty line..." << std::endl;
             continue;
         }
 
@@ -279,48 +278,55 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
     tpc_file.close();
 
-    /* Fits and reconstruction */
+    /** TPC Tracking **/
     /* (now that all hits are loaded) */
 
     Double_t p_ini;
+    Bool_t circlefit_state, helixfit_state;
 
     for (Event_tt &evt : Events) {
         for (Particle_tt &part : evt.particles) {
 
-            /* Load info of all TPC hits of a particle  */
+            /* Load hits info */
 
-            Double_t tpc_x[(Int_t)part.tpc_hits.size()];
-            Double_t tpc_y[(Int_t)part.tpc_hits.size()];
-            Double_t tpc_z[(Int_t)part.tpc_hits.size()];
-            Double_t tpc_edep[(Int_t)part.tpc_hits.size()];
+            Int_t n_tpc_hits = (Int_t)part.tpc_hits.size();
+            Double_t tpc_x[n_tpc_hits];
+            Double_t tpc_y[n_tpc_hits];
+            Double_t tpc_z[n_tpc_hits];
+            Double_t tpc_edep[n_tpc_hits];
 
-            for (Int_t hit_idx = 0; hit_idx < (Int_t)part.tpc_hits.size(); hit_idx++) {
+            for (Int_t hit_idx = 0; hit_idx < n_tpc_hits; hit_idx++) {
                 tpc_x[hit_idx] = part.tpc_hits[hit_idx].x;
                 tpc_y[hit_idx] = part.tpc_hits[hit_idx].y;
                 tpc_z[hit_idx] = part.tpc_hits[hit_idx].z;
                 tpc_edep[hit_idx] = part.tpc_hits[hit_idx].edep;
             }
 
+            /* Protection cuts */
+
+            if (n_tpc_hits < 100) continue;
+
+            p_ini = TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini + part.pz_ini * part.pz_ini);
+            if (p_ini < 10) continue;
+
             /* Fit TPC hits to a circle */
 
             Double_t x_c, y_c, radius, chi2_circle;
-            LeastSquaresCircleFit((Int_t)part.tpc_hits.size(), tpc_x, tpc_y, x_c, y_c, radius, chi2_circle);
+            circlefit_state = LeastSquaresCircleFit(n_tpc_hits, tpc_x, tpc_y, x_c, y_c, radius, chi2_circle);
 
-            /* Fit TPC hits to Helix with help of Circle fit and calculate the total momentum */
+            /* Fit TPC hits to helix */
 
             Double_t angle, charge, chi2_helix;
             Int_t direction;
-            HelixFit((Int_t)part.tpc_hits.size(), tpc_x, tpc_y, tpc_z, x_c, y_c, radius, angle, charge, direction, chi2_helix);
+            helixfit_state = HelixFit(n_tpc_hits, tpc_x, tpc_y, tpc_z, x_c, y_c, radius, angle, charge, direction, chi2_helix);
 
-            /* Compute the differential Energy loss of the particle */
+            /* Compute the differential energy loss of the particle */
 
-            for (Int_t hit_idx = 0; hit_idx < (Int_t)part.tpc_hits.size(); hit_idx++) {
-            }
+            Double_t dx, dE_dx;
+            EnergyLoss(n_tpc_hits, tpc_edep, tpc_x, tpc_y, tpc_z, dE_dx, dx);
 
-            Double_t dE_dx, dx;
-            EnergyLoss((Int_t)part.tpc_hits.size(), tpc_edep, tpc_x, tpc_y, tpc_z, dE_dx, dx);
+            /* Store results */
 
-            // save differential energy loss and reconstructed momentum for the particle in Map
             part.pt_rec = 0.3 * 0.2 * radius * cmTom;
             part.pz_rec = direction * part.pt_rec * TMath::Abs(TMath::Tan(angle)) * GeVToMeV;
             part.p_rec = TMath::Sqrt(part.pt_rec * part.pt_rec + part.pz_rec * part.pz_rec);
@@ -393,9 +399,11 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
         for (Particle_tt &part : evt.particles) {
 
+            /* Cuts */
+
             if ((Int_t)part.tpc_hits.size() < 100) continue;
 
-            Double_t p_ini = TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini + part.pz_ini * part.pz_ini);
+            p_ini = TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini + part.pz_ini * part.pz_ini);
             if (p_ini < 10) continue;
 
             if (part.chi2_helix > 100) continue;
@@ -408,7 +416,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
             aux_Py_ini.push_back(part.py_ini);
             aux_Pz_ini.push_back(part.pz_ini);
             aux_Pt_ini.push_back(TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini));
-            aux_P_ini.push_back(TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini + part.pz_ini * part.pz_ini));
+            aux_P_ini.push_back(p_ini);
             aux_parentID.push_back(part.parentID);
             aux_nDaughters.push_back(part.n_daughters);
             aux_isPrimary.push_back(part.is_primary);

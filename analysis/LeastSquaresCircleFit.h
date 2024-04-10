@@ -22,7 +22,7 @@ Double_t CircleMinFcn(Int_t N, Double_t *x, Double_t *y, Double_t x_c, Double_t 
  - Return: `0` if successful, `1` if determinant is too small
  Reference: https://dtcenter.org/community-code/model-evaluation-tools-met/documentation
 */
-Int_t LeastSquaresCircleFit(Int_t N, Double_t *x, Double_t *y, Double_t &x_c, Double_t &y_c, Double_t &r, Double_t &chi2) {
+Bool_t LeastSquaresCircleFit(Int_t N, Double_t *x, Double_t *y, Double_t &x_c, Double_t &y_c, Double_t &r, Double_t &chi2) {
 
     /* Get average */
 
@@ -71,7 +71,7 @@ Int_t LeastSquaresCircleFit(Int_t N, Double_t *x, Double_t *y, Double_t &x_c, Do
     Double_t det = Suu * Svv - Suv * Suv;
     if (det < 1E-6) {
         std::cerr << "The determinant is too small!" << std::endl;
-        return 1;
+        return kFALSE;
     }
 
     /* Calculate the solution */
@@ -88,5 +88,5 @@ Int_t LeastSquaresCircleFit(Int_t N, Double_t *x, Double_t *y, Double_t &x_c, Do
     r = TMath::Sqrt(alpha);
     chi2 = CircleMinFcn(N, x, y, x_c, y_c, r);
 
-    return 0;
+    return kTRUE;
 }
