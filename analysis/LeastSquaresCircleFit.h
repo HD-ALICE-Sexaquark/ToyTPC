@@ -2,21 +2,16 @@
 
 #include "TMath.h"
 
-Double_t CHI_squared(Int_t N, Double_t *x, Double_t *y, Double_t x_c, Double_t y_c, Double_t r) {
-
-    // get the smallest distance of all points from the circle
-
-    Double_t dist[N];
-
-    Double_t res = 0;  // residual
-
-    // compute distance from loop center and compare to radius of the loop and residual
+/*
+  Minimisation function computing the sum of squares of residuals looping at the graph points.
+*/
+Double_t CircleMinFcn(Int_t N, Double_t *x, Double_t *y, Double_t x_c, Double_t y_c, Double_t r) {
+    Double_t dr;
+    Double_t res = 0.;  // residual
     for (Int_t i = 0; i < N; i++) {
-        dist[i] = r - TMath::Sqrt((x[i] - x_c) * (x[i] - x_c) + (y[i] - y_c) * (y[i] - y_c));
-
-        res += dist[i] * dist[i];
+        dr = r - TMath::Sqrt((x[i] - x_c) * (x[i] - x_c) + (y[i] - y_c) * (y[i] - y_c));
+        res += dr * dr;
     }
-
     return res;
 }
 
@@ -25,7 +20,7 @@ Double_t CHI_squared(Int_t N, Double_t *x, Double_t *y, Double_t x_c, Double_t y
  - Input: `x`, `y` arrays of length `N`
  - Output: `x_c`, `y_c`, `r`
  - Return: `0` if successful, `1` if determinant is too small
- * Reference: https://dtcenter.org/community-code/model-evaluation-tools-met/documentation
+ Reference: https://dtcenter.org/community-code/model-evaluation-tools-met/documentation
 */
 Int_t LeastSquaresCircleFit(Int_t N, Double_t *x, Double_t *y, Double_t &x_c, Double_t &y_c, Double_t &r, Double_t &chi2) {
 
@@ -91,7 +86,7 @@ Int_t LeastSquaresCircleFit(Int_t N, Double_t *x, Double_t *y, Double_t &x_c, Do
     x_c = u_c + avg_x;
     y_c = v_c + avg_y;
     r = TMath::Sqrt(alpha);
-    chi2 = CHI_squared(N, x, y, x_c, y_c, r);
+    chi2 = CircleMinFcn(N, x, y, x_c, y_c, r);
 
     return 0;
 }
