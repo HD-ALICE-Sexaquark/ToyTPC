@@ -10,7 +10,6 @@
 #include "TLorentzVector.h"
 #include "TMath.h"
 #include "TObjArray.h"
-#include "TRandom3.h"
 #include "TString.h"
 #include "TTree.h"
 #include "TVector3.h"
@@ -82,41 +81,6 @@ struct Event_tt {
     std::vector<Particle_tt> particles;
 };
 
-/*** FUNCTIONS ***/
-
-/*
- Smear px, py or pz
- The parameters for sigma_p were obtained from the ALICE performance paper
- - after extracting the points from Fig. 23
- - using Eq. 14 to get sigma_pt/pt
- - then made a linear fit on those values
- (reference: Int. J. Mod. Phys. A 2014.29)
- NOTE: it says resolution of pt, but I'm generalizing it for px,py,pz...
- - Units: in GeV/c
-*/
-Double_t SmearMomentum(Double_t p, TRandom3 *rnd) {
-
-    // std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> p = " << p << std::endl;
-
-    Double_t sigma_p = 0.0053 * p * p + 0.0032 * TMath::Abs(p);
-    // std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> sigma_p = " << sigma_p << std::endl;
-
-    // protection
-    if (sigma_p < 1E-4) {
-        return p;
-    }
-
-    TF1 function_p("function_p", "gaus", 0., 10.);
-    function_p.SetParameter(0, 1.);
-    function_p.SetParameter(1, p);
-    function_p.SetParameter(2, sigma_p);
-
-    Double_t smeared_p = function_p.GetRandom(rnd);
-    // std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> smeared_p = " << smeared_p << std::endl;
-
-    return smeared_p;
-}
-
 /*** MAIN ***/
 
 void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
@@ -140,9 +104,6 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
         TString output_filename = Form("run%02d_ana.root", run_n);
     */
 
-    // prepare TRandom object, necessary later for smearing
-    TRandom3 *rnd = new TRandom3(0.);
-
     // conversion factors
     const Double_t MeVToGeV = 1E-3;
     const Double_t GeVToMeV = 1E3;
@@ -150,6 +111,7 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
     const Double_t cmTom = 1E-2;
     const Double_t mTocm = 1E2;
 
+    /************************************/
     /*** Part 1: Read and Store Input ***/
 
     // init particles -- main container
@@ -484,6 +446,7 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
     avg_error_pz = avg_error_pz / n_particles;
     std::cout << "=> error in pz = " << avg_error_pz << std::endl;
 
+    /*********************/
     /*** Part 2: Trees ***/
 
     // prepare output
@@ -504,7 +467,6 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
     std::vector<Float_t> aux_Pz_ini;
     std::vector<Float_t> aux_P_ini;
     std::vector<Float_t> aux_Pt_ini;
-    std::vector<Float_t> aux_Pt_sme;
     std::vector<Float_t> aux_Pt_rec;
     std::vector<Float_t> aux_dEdx;
     std::vector<Float_t> aux_P_rec;
@@ -529,7 +491,6 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
     output_tree->Branch("Pz_ini", &aux_Pz_ini);
     output_tree->Branch("P_ini", &aux_P_ini);
     output_tree->Branch("Pt_ini", &aux_Pt_ini);
-    output_tree->Branch("Pt_sme", &aux_Pt_sme);
     output_tree->Branch("Pt_rec", &aux_Pt_rec);
     output_tree->Branch("dEdx", &aux_dEdx);
     output_tree->Branch("P_rec", &aux_P_rec);
@@ -570,7 +531,6 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
             aux_Pz_ini.push_back(part.pz_ini);
             aux_P_ini.push_back(TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini + part.pz_ini * part.pz_ini));
             aux_Pt_ini.push_back(TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini));
-            aux_Pt_sme.push_back(SmearMomentum(aux_Pt_ini.back() * MeVToGeV, rnd) * GeVToMeV);
             aux_Pt_rec.push_back(part.pt_rec);
             aux_dEdx.push_back(part.dE_dx);
             aux_P_rec.push_back(part.p_rec);
@@ -598,7 +558,6 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
         aux_Pz_ini.clear();
         aux_P_ini.clear();
         aux_Pt_ini.clear();
-        aux_Pt_sme.clear();
         aux_Pt_rec.clear();
         aux_dEdx.clear();
         aux_P_rec.clear();
