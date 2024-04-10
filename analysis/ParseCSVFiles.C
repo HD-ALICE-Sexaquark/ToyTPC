@@ -1,3 +1,4 @@
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -14,13 +15,15 @@
 #include "TTree.h"
 #include "TVector3.h"
 
+#include "EnergyLoss.h"
+#include "HelixFit.h"
 #include "LeastSquaresCircleFit.h"
 
 /*** STRUCTURES ***/
 
 /*
  Container of ITS hit information.
- */
+*/
 struct ITSHit_tt {
     Int_t layerNb;
     Float_t x;
@@ -31,7 +34,7 @@ struct ITSHit_tt {
 
 /*
  Container of TPC hit information.
- */
+*/
 struct TPCHit_tt {
     Float_t x;
     Float_t y;
@@ -45,7 +48,7 @@ struct TPCHit_tt {
 
 /*
  Container for particle information.
- */
+*/
 struct Particle_tt {
     Int_t trackID;
     Int_t PDGcode;
@@ -61,11 +64,19 @@ struct Particle_tt {
     Int_t charge;
     std::vector<ITSHit_tt> its_hits;
     std::vector<TPCHit_tt> tpc_hits;
+    Float_t dE_dx;
+    Float_t pt_rec;
+    Float_t p_rec;
+    Float_t dx;  // average distance between two hits in the TPC
+    Float_t pz_rec;
+    Float_t charge_rec;
+    Float_t chi2_prec;
+    Float_t chi2_ptrec;
 };
 
 /*
  Container for event information.
- */
+*/
 struct Event_tt {
     Int_t eventID;
     std::vector<Particle_tt> particles;
@@ -82,13 +93,13 @@ struct Event_tt {
  (reference: Int. J. Mod. Phys. A 2014.29)
  NOTE: it says resolution of pt, but I'm generalizing it for px,py,pz...
  - Units: in GeV/c
- */
+*/
 Double_t SmearMomentum(Double_t p, TRandom3 *rnd) {
 
-    std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> p = " << p << std::endl;
+    // std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> p = " << p << std::endl;
 
     Double_t sigma_p = 0.0053 * p * p + 0.0032 * TMath::Abs(p);
-    std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> sigma_p = " << sigma_p << std::endl;
+    // std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> sigma_p = " << sigma_p << std::endl;
 
     // protection
     if (sigma_p < 1E-4) {
@@ -101,20 +112,33 @@ Double_t SmearMomentum(Double_t p, TRandom3 *rnd) {
     function_p.SetParameter(2, sigma_p);
 
     Double_t smeared_p = function_p.GetRandom(rnd);
-    std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> smeared_p = " << smeared_p << std::endl;
+    // std::cerr << "ParseCVSFiles.C :: SmearMomentum :: >> smeared_p = " << smeared_p << std::endl;
 
     return smeared_p;
 }
 
 /*** MAIN ***/
 
-void ParseCSVFiles(Int_t run_n = 0) {
+void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
 
-    // set input/output filenames -- hardcoded
-    TString input_traj_file = Form("run%03d_traj.csv", run_n);
-    TString input_its_file = Form("run%03d_its.csv", run_n);
-    TString input_tpc_file = Form("run%03d_tpc.csv", run_n);
-    TString output_filename = Form("run%03d_ana.root", run_n);
+    // set input/output filenames -- hardcoded (not anymore :))
+
+    TString simdir = "/home/ceres/borquez/some/toy/sims/low-pt-tracks-rec/";
+
+    TString input_traj_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_traj.csv", run_n);
+    TString input_its_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_its.csv", run_n);
+    TString input_tpc_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_tpc.csv", run_n);
+
+    TString output_filename = Form("run%02d_ana.root", run_n);
+
+    /*
+    // temporary test snippet
+    void ParseCSVFiles(Int_t run_n = 0) {
+        TString input_traj_file = Form("run%02d_traj.csv", run_n);
+        TString input_its_file = Form("run%02d_its.csv", run_n);
+        TString input_tpc_file = Form("run%02d_tpc.csv", run_n);
+        TString output_filename = Form("run%02d_ana.root", run_n);
+    */
 
     // prepare TRandom object, necessary later for smearing
     TRandom3 *rnd = new TRandom3(0.);
@@ -132,8 +156,16 @@ void ParseCSVFiles(Int_t run_n = 0) {
     std::vector<Event_tt> Events;
 
     // vector and map to link between eventID, trackID and main vector indices
-    std::vector<std::map<Int_t, Int_t>> part_index;       // [eventID][trackID]
-    std::vector<std::map<Int_t, Int_t>> part_ndaughters;  // [eventID][trackID]
+    std::vector<std::map<Int_t, Int_t>> part_index;          // [eventID][trackID]
+    std::vector<std::map<Int_t, Int_t>> part_ndaughters;     // [eventID][trackID]
+    std::vector<std::map<Int_t, Double_t>> part_pt_rec;      // [eventID][trackID]
+    std::vector<std::map<Int_t, Double_t>> part_dE_dx;       // [eventID][trackID]
+    std::vector<std::map<Int_t, Double_t>> part_p_rec;       // [eventID][trackID]
+    std::vector<std::map<Int_t, Double_t>> part_dx;          // [eventID][trackID]
+    std::vector<std::map<Int_t, Double_t>> part_pz_rec;      // [eventID][trackID]
+    std::vector<std::map<Int_t, Double_t>> part_charge_rec;  // [eventID][trackID]
+    std::vector<std::map<Int_t, Double_t>> part_chi2_prec;   // [eventID][trackID]
+    std::vector<std::map<Int_t, Double_t>> part_chi2_ptrec;  // [eventID][trackID]
 
     /** Part 1a: Trajectories **/
 
@@ -170,6 +202,14 @@ void ParseCSVFiles(Int_t run_n = 0) {
             Events.resize(current_eventID + 1);
             part_index.resize(current_eventID + 1);
             part_ndaughters.resize(current_eventID + 1);
+            part_pt_rec.resize(current_eventID + 1);
+            part_dE_dx.resize(current_eventID + 1);
+            part_p_rec.resize(current_eventID + 1);
+            part_dx.resize(current_eventID + 1);
+            part_pz_rec.resize(current_eventID + 1);
+            part_charge_rec.resize(current_eventID + 1);
+            part_chi2_prec.resize(current_eventID + 1);
+            part_chi2_ptrec.resize(current_eventID + 1);
             Events.at(current_eventID).eventID = current_eventID;
             prev_eventID = current_eventID;  // we're in a different event now
         }
@@ -292,8 +332,84 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
     tpc_file.close();
 
-    /*** Debug: Check content of Events vector ***/
+    /* Fits and reconstruction*/
 
+    Double_t p_ini;
+
+    for (Event_tt &evt : Events) {
+
+        // std::cout << "ParseCSVFiles.C :: Printing Event #" << evt.eventID << std::endl;
+        // std::cout << "ParseCSVFiles.C :: (n particles = " << (Int_t)evt.particles.size() << ")" << std::endl;
+        // std::cout << "ParseCSVFiles.C :: " << std::endl;
+
+        for (Particle_tt &part : evt.particles) {
+
+            if ((Int_t)part.tpc_hits.size() < 100) continue;
+
+            p_ini = TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini + part.pz_ini * part.pz_ini);
+
+            if (p_ini < 10) continue;
+
+            /* Implement auxiliar vectors for pt_rec and dE_dx to safe them in the tree
+            Already implemented at the beginning to resize like ndaughters!!!!!!!!*/
+
+            // std::vector<std::map<Int_t, Int_t>> part_pt_rec;       // [eventID][trackID]
+            // std::vector<std::map<Int_t, Int_t>> part_dE_dx;       // [eventID][trackID]
+
+            /* Fit TPC hits to a circle */
+
+            Double_t tpc_x[(Int_t)part.tpc_hits.size()];
+            Double_t tpc_y[(Int_t)part.tpc_hits.size()];
+            for (Int_t hit_idx = 0; hit_idx < (Int_t)part.tpc_hits.size(); hit_idx++) {
+                tpc_x[hit_idx] = part.tpc_hits[hit_idx].x;
+                tpc_y[hit_idx] = part.tpc_hits[hit_idx].y;
+            }
+
+            Double_t x_c, y_c, radius, chi2_ptrec;
+            LeastSquaresCircleFit((Int_t)part.tpc_hits.size(), tpc_x, tpc_y, x_c, y_c, radius, chi2_ptrec);
+
+            /* Compute the differential Energy loss of the particle */
+
+            Double_t tpc_z[(Int_t)part.tpc_hits.size()];
+            Double_t tpc_edep[(Int_t)part.tpc_hits.size()];
+
+            for (Int_t hit_idx = 0; hit_idx < (Int_t)part.tpc_hits.size(); hit_idx++) {
+                tpc_z[hit_idx] = part.tpc_hits[hit_idx].z;
+                tpc_edep[hit_idx] = part.tpc_hits[hit_idx].edep;
+            }
+
+            Double_t dE_dx, dx;
+            EnergyLoss((Int_t)part.tpc_hits.size(), tpc_edep, tpc_x, tpc_y, tpc_z, dE_dx, dx);
+            // std::cout << "ParseCSVFiles.C :: >> differential Energy loss [dE/dx] in MeV/cm " << dE_dx << std::endl;
+
+            Double_t pt_rec = 0.3 * 0.2 * radius * cmTom;
+
+            /* Fit TPC hits to Helix with help of Circle fit and calculate the total momentum */
+
+            Double_t angle;
+            Double_t charge;
+            Double_t chi2_prec;
+            Int_t direction;
+
+            HelixFit((Int_t)part.tpc_hits.size(), tpc_x, tpc_y, tpc_z, x_c, y_c, radius, angle, charge, chi2_prec, direction);
+
+            Double_t pz_rec = direction * pt_rec * TMath::Abs(TMath::Tan(angle));
+            Double_t p_rec = TMath::Sqrt(pt_rec * pt_rec + pz_rec * pz_rec);
+
+            // save differential energy loss and reconstructed momentum for the particle in Map
+            part_dE_dx[evt.eventID][part.trackID] = dE_dx;
+            part_pt_rec[evt.eventID][part.trackID] = pt_rec;
+            part_p_rec[evt.eventID][part.trackID] = p_rec;
+            part_dx[evt.eventID][part.trackID] = dx;
+            part_pz_rec[evt.eventID][part.trackID] = pz_rec;
+            part_charge_rec[evt.eventID][part.trackID] = charge;
+            part_chi2_prec[evt.eventID][part.trackID] = chi2_prec;
+            part_chi2_ptrec[evt.eventID][part.trackID] = chi2_ptrec;
+        }
+    }
+
+    /*** Debug: Check content of Events vector ***/
+    /*
     for (Event_tt &evt : Events) {
 
         std::cout << "ParseCSVFiles.C :: Printing Event #" << evt.eventID << std::endl;
@@ -312,16 +428,6 @@ void ParseCSVFiles(Int_t run_n = 0) {
                 std::cout << "ParseCSVFiles.C :: >> n_its_hits " << (Int_t)part.its_hits.size() << std::endl;
                 std::cout << "ParseCSVFiles.C :: >> n_tpc_hits " << (Int_t)part.tpc_hits.size() << std::endl;
 
-                /* Fit TPC hits to a circle */
-
-                Double_t tpc_x[(Int_t)part.tpc_hits.size()];
-                Double_t tpc_y[(Int_t)part.tpc_hits.size()];
-                for (Int_t hit_idx = 0; hit_idx < (Int_t)part.tpc_hits.size(); hit_idx++) {
-                    tpc_x[hit_idx] = part.tpc_hits[hit_idx].x;
-                    tpc_y[hit_idx] = part.tpc_hits[hit_idx].y;
-                }
-                Double_t x_c, y_c, radius;
-                LeastSquaresCircleFit((Int_t)part.tpc_hits.size(), tpc_x, tpc_y, x_c, y_c, radius);
 
                 std::cout << "ParseCSVFiles.C :: >> radius " << radius << std::endl;
                 std::cout << "ParseCSVFiles.C :: >> pt_ini "
@@ -329,7 +435,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
                 std::cout << "ParseCSVFiles.C :: >> pt (from radius) " << 0.3 * 0.2 * radius * cmTom << std::endl;
             }
 
-            /*
+
                 for (ITSHit_tt &its_hit : part.its_hits) {
                     std::cout << "ParseCSVFiles.C ::    >> layer " << its_hit.layerNb << std::endl;
                     std::cout << "ParseCSVFiles.C ::    >> edep " << its_hit.edep << std::endl;
@@ -342,10 +448,41 @@ void ParseCSVFiles(Int_t run_n = 0) {
                std::endl; std::cout << "ParseCSVFiles.C ::    >> px,py,pz " << tpc_hit.x << ", " << tpc_hit.y << ", " << tpc_hit.z << ", "
                << std::endl;
                 }
-            */
         }
         std::cout << "ParseCSVFiles.C :: " << std::endl;
     }
+    */
+
+    /* Posteriori variables: pt_rec and dE_dx */
+
+    Double_t avg_error_pz;
+    Double_t n_particles = 0;
+
+    for (Event_tt &evt : Events) {
+        for (Particle_tt &part : evt.particles) {
+
+            part.pt_rec = part_pt_rec[evt.eventID][part.trackID];
+            part.p_rec = part_p_rec[evt.eventID][part.trackID];
+            part.dE_dx = part_dE_dx[evt.eventID][part.trackID];
+            part.dx = part_dx[evt.eventID][part.trackID];
+            part.pz_rec = part_pz_rec[evt.eventID][part.trackID];
+            part.charge_rec = part_charge_rec[evt.eventID][part.trackID];
+            part.chi2_prec = part_chi2_prec[evt.eventID][part.trackID];
+            part.chi2_ptrec = part_chi2_ptrec[evt.eventID][part.trackID];
+
+            if ((Int_t)part.tpc_hits.size() < 100) continue;
+            if (TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini + part.pz_ini * part.pz_ini) < 10) continue;
+            if (part.chi2_prec > 100) continue;
+            if (part.chi2_ptrec > 5) continue;
+
+            std::cout << "event,part,pid,pz_ini,pz_rec,charge = " << evt.eventID << ", " << part.trackID << ", " << part.PDGcode << ", "
+                      << part.pz_ini << ", " << part.pz_rec * 1E3 << ", " << part.charge_rec << std::endl;
+            avg_error_pz += TMath::Abs((part.pz_ini - part.pz_rec * 1E3) / part.pz_ini);
+            n_particles++;
+        }
+    }
+    avg_error_pz = avg_error_pz / n_particles;
+    std::cout << "=> error in pz = " << avg_error_pz << std::endl;
 
     /*** Part 2: Trees ***/
 
@@ -365,10 +502,18 @@ void ParseCSVFiles(Int_t run_n = 0) {
     std::vector<Float_t> aux_Px_ini;
     std::vector<Float_t> aux_Py_ini;
     std::vector<Float_t> aux_Pz_ini;
+    std::vector<Float_t> aux_P_ini;
     std::vector<Float_t> aux_Pt_ini;
     std::vector<Float_t> aux_Pt_sme;
     std::vector<Float_t> aux_Pt_rec;
     std::vector<Float_t> aux_dEdx;
+    std::vector<Float_t> aux_P_rec;
+    std::vector<Float_t> aux_dx;
+    std::vector<Float_t> aux_Pz_rec;
+    std::vector<Float_t> aux_charge_rec;
+    std::vector<Float_t> aux_charge;
+    std::vector<Float_t> aux_chi2_prec;
+    std::vector<Float_t> aux_chi2_ptrec;
 
     // set tree branches
     output_tree->Branch("eventID", &aux_eventID);
@@ -382,10 +527,18 @@ void ParseCSVFiles(Int_t run_n = 0) {
     output_tree->Branch("Px_ini", &aux_Px_ini);
     output_tree->Branch("Py_ini", &aux_Py_ini);
     output_tree->Branch("Pz_ini", &aux_Pz_ini);
+    output_tree->Branch("P_ini", &aux_P_ini);
     output_tree->Branch("Pt_ini", &aux_Pt_ini);
     output_tree->Branch("Pt_sme", &aux_Pt_sme);
     output_tree->Branch("Pt_rec", &aux_Pt_rec);
     output_tree->Branch("dEdx", &aux_dEdx);
+    output_tree->Branch("P_rec", &aux_P_rec);
+    output_tree->Branch("dx", &aux_dx);
+    output_tree->Branch("Pz_rec", &aux_Pz_rec);
+    output_tree->Branch("charge_rec", &aux_charge_rec);
+    output_tree->Branch("charge", &aux_charge);
+    output_tree->Branch("chi2_prec", &aux_chi2_prec);
+    output_tree->Branch("chi2_ptrec", &aux_chi2_ptrec);
 
     for (Event_tt &evt : Events) {
 
@@ -393,10 +546,17 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
         for (Particle_tt &part : evt.particles) {
 
-            // (cut)
-            if ((Int_t)part.tpc_hits.size() < 100) {
-                continue;
-            }
+            // (cut-offs)
+
+            if ((Int_t)part.tpc_hits.size() < 100) continue;
+
+            Double_t p_ini = TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini + part.pz_ini * part.pz_ini);
+
+            if (p_ini <= 10) continue;
+
+            if (part.chi2_prec > 100) continue;
+
+            if (part.chi2_ptrec > 5) continue;
 
             aux_trackID.push_back(part.trackID);
             aux_PDGcode.push_back(part.PDGcode);
@@ -408,10 +568,18 @@ void ParseCSVFiles(Int_t run_n = 0) {
             aux_Px_ini.push_back(part.px_ini);
             aux_Py_ini.push_back(part.py_ini);
             aux_Pz_ini.push_back(part.pz_ini);
+            aux_P_ini.push_back(TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini + part.pz_ini * part.pz_ini));
             aux_Pt_ini.push_back(TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini));
             aux_Pt_sme.push_back(SmearMomentum(aux_Pt_ini.back() * MeVToGeV, rnd) * GeVToMeV);
-            aux_Pt_rec.push_back(0.);  // (pending)
-            aux_dEdx.push_back(0.);    // (pending)
+            aux_Pt_rec.push_back(part.pt_rec);
+            aux_dEdx.push_back(part.dE_dx);
+            aux_P_rec.push_back(part.p_rec);
+            aux_dx.push_back(part.dx);
+            aux_Pz_rec.push_back(part.pz_rec);
+            aux_charge_rec.push_back(part.charge_rec);
+            aux_charge.push_back(part.charge);
+            aux_chi2_prec.push_back(part.chi2_prec);
+            aux_chi2_ptrec.push_back(part.chi2_ptrec);
         }
 
         // at the end of the event
@@ -428,10 +596,18 @@ void ParseCSVFiles(Int_t run_n = 0) {
         aux_Px_ini.clear();
         aux_Py_ini.clear();
         aux_Pz_ini.clear();
+        aux_P_ini.clear();
         aux_Pt_ini.clear();
         aux_Pt_sme.clear();
         aux_Pt_rec.clear();
         aux_dEdx.clear();
+        aux_P_rec.clear();
+        aux_dx.clear();
+        aux_Pz_rec.clear();
+        aux_charge_rec.clear();
+        aux_charge.clear();
+        aux_chi2_prec.clear();
+        aux_chi2_ptrec.clear();
     }
 
     output_tree->Write();
