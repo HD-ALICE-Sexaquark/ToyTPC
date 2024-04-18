@@ -13,4 +13,4 @@ analysis/*.root
 pythia*/
 generator/*.csv
 generator/main_GenCollision
-
+**/jonas*/
