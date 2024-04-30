@@ -162,7 +162,7 @@ G4VPhysicalVolume* DetectorConstruction::DefineVolumes() {
     // [taken from Table 1.1 of the TDR of the ITS Upgrade]
     const G4int NLayersITS = 7;
     G4double layerLength[NLayersITS] = {271. * mm, 271. * mm, 271. * mm, 843. * mm, 843. * mm, 1475. * mm, 1475. * mm};
-    G4double layerInnerRadius[NLayersITS] = {22.4 * mm, 30.1 * mm, 37.8 * mm, 194.4 * mm, 243.9 * mm, 342.3 * mm};
+    G4double layerInnerRadius[NLayersITS] = {22.4 * mm, 30.1 * mm, 37.8 * mm, 194.4 * mm, 243.9 * mm, 342.3 * mm, 391.8 * mm};
     G4double layerOuterRadius[NLayersITS] = {26.7 * mm, 34.6 * mm, 42.1 * mm, 197.7 * mm, 247. * mm, 345.4 * mm, 394.9 * mm};
     G4double layerMidRadius[NLayersITS];
     for (G4int layerNo = 0; layerNo < NLayersITS; layerNo++)
