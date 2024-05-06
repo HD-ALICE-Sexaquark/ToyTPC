@@ -27,7 +27,9 @@ struct ITSHit_tt {
     Float_t x;
     Float_t y;
     Float_t z;
-    Float_t edep;
+    Float_t px;
+    Float_t py;
+    Float_t pz;
 };
 
 /*
@@ -40,7 +42,6 @@ struct TPCHit_tt {
     Float_t px;
     Float_t py;
     Float_t pz;
-    Float_t time;
     Float_t edep;
 };
 
@@ -48,6 +49,7 @@ struct TPCHit_tt {
  Container for particle information.
 */
 struct Particle_tt {
+    // true info
     Int_t trackID;
     Int_t PDGcode;
     Float_t x_ini;
@@ -60,16 +62,42 @@ struct Particle_tt {
     Int_t n_daughters;
     Bool_t is_primary;
     Int_t charge;
+    // ITS
     std::vector<ITSHit_tt> its_hits;
+    Float_t its_pt_rec;
+    Float_t its_pz_rec;
+    Float_t its_p_rec;
+    Float_t its_charge_rec;
+    Float_t its_chi2_circle;
+    Float_t its_chi2_helix;
+    // -- first hit info, for debugging
+    Float_t its_fh_px;
+    Float_t its_fh_py;
+    Float_t its_fh_pt;
+    Float_t its_fh_pz;
+    Float_t its_fh_p;
+    // -- last hit info
+    Float_t its_lh_px;
+    Float_t its_lh_py;
+    Float_t its_lh_pt;
+    Float_t its_lh_pz;
+    Float_t its_lh_p;
+    // TPC
     std::vector<TPCHit_tt> tpc_hits;
-    Float_t pt_rec;
-    Float_t pz_rec;
-    Float_t p_rec;
-    Float_t charge_rec;
-    Float_t chi2_circle;
-    Float_t chi2_helix;
-    Float_t dx;  // average distance between two hits in the TPC
-    Float_t dE_dx;
+    Float_t tpc_pt_rec;
+    Float_t tpc_pz_rec;
+    Float_t tpc_p_rec;
+    Float_t tpc_charge_rec;
+    Float_t tpc_chi2_circle;
+    Float_t tpc_chi2_helix;
+    Float_t tpc_dx;  // average distance between two hits in the TPC
+    Float_t tpc_dE_dx;
+    // -- first hit info
+    Float_t tpc_fh_px;
+    Float_t tpc_fh_py;
+    Float_t tpc_fh_pt;
+    Float_t tpc_fh_pz;
+    Float_t tpc_fh_p;
 };
 
 /*
@@ -81,27 +109,28 @@ struct Event_tt {
 };
 
 /*** MAIN ***/
-/*
+
 void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
 
     // set input/output filenames -- hardcoded (not anymore :))
 
-    TString simdir = "/home/ceres/borquez/some/toy/sims/low-pt-tracks-rec/";
+    TString simdir = "/misc/alidata130/alice_u/kleine/software/ToyTPC/output/";
 
     TString input_traj_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_traj.csv", run_n);
     TString input_its_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_its.csv", run_n);
     TString input_tpc_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_tpc.csv", run_n);
 
     TString output_filename = Form("run%02d_ana.root", run_n);
- */
 
-// temporary test snippet
-void ParseCSVFiles(Int_t run_n = 0) {
+    // temporary test snippet
+    /*
+    void ParseCSVFiles(Int_t run_n = 0) {
 
-    TString input_traj_file = Form("run%02d_traj.csv", run_n);
-    TString input_its_file = Form("run%02d_its.csv", run_n);
-    TString input_tpc_file = Form("run%02d_tpc.csv", run_n);
-    TString output_filename = Form("run%02d_ana.root", run_n);
+        TString input_traj_file = Form("run%02d_traj_itest.csv", run_n);
+        TString input_its_file = Form("run%02d_its_itest.csv", run_n);
+        TString input_tpc_file = Form("run%02d_tpc_itest.csv", run_n);
+        TString output_filename = Form("run%02d_ana_itest.root", run_n);
+    */
 
     // conversion factors
     const Double_t MeVToGeV = 1E-3;
@@ -159,17 +188,17 @@ void ParseCSVFiles(Int_t run_n = 0) {
             prev_eventID = current_eventID;  // we're in a different event now
         }
 
-        aux_particle.trackID = ((TString)(token->At(1)->GetName())).Atoi();   //     [1] trackID
-        aux_particle.PDGcode = ((TString)(token->At(2)->GetName())).Atoi();   //     [2] PDGcode
-        aux_particle.x_ini = ((TString)(token->At(3)->GetName())).Atof();     //     [3] x_ini
-        aux_particle.y_ini = ((TString)(token->At(4)->GetName())).Atof();     //     [4] y_ini
-        aux_particle.z_ini = ((TString)(token->At(5)->GetName())).Atof();     //     [5] z_ini
-        aux_particle.px_ini = ((TString)(token->At(6)->GetName())).Atof();    //     [6] px_ini
-        aux_particle.py_ini = ((TString)(token->At(7)->GetName())).Atof();    //     [7] py_ini
-        aux_particle.pz_ini = ((TString)(token->At(8)->GetName())).Atof();    //     [8] pz_ini
-        aux_particle.parentID = ((TString)(token->At(9)->GetName())).Atoi();  //     [9] parentID
-        aux_particle.is_primary = aux_particle.parentID == 0;                 //     [-] is_primary
-        aux_particle.charge = ((TString)(token->At(10)->GetName())).Atoi();   //    [10] charge
+        aux_particle.trackID = ((TString)(token->At(1)->GetName())).Atoi();            //     [1] trackID
+        aux_particle.PDGcode = ((TString)(token->At(2)->GetName())).Atoi();            //     [2] PDGcode
+        aux_particle.x_ini = ((TString)(token->At(3)->GetName())).Atof();              //     [3] x_ini
+        aux_particle.y_ini = ((TString)(token->At(4)->GetName())).Atof();              //     [4] y_ini
+        aux_particle.z_ini = ((TString)(token->At(5)->GetName())).Atof();              //     [5] z_ini
+        aux_particle.px_ini = ((TString)(token->At(6)->GetName())).Atof() * MeVToGeV;  //     [6] px_ini
+        aux_particle.py_ini = ((TString)(token->At(7)->GetName())).Atof() * MeVToGeV;  //     [7] py_ini
+        aux_particle.pz_ini = ((TString)(token->At(8)->GetName())).Atof() * MeVToGeV;  //     [8] pz_ini
+        aux_particle.parentID = ((TString)(token->At(9)->GetName())).Atoi();           //     [9] parentID
+        aux_particle.is_primary = aux_particle.parentID == 0;                          //     [-] is_primary
+        aux_particle.charge = ((TString)(token->At(10)->GetName())).Atoi();            //    [10] charge
 
         Events.at(current_eventID).particles.push_back(aux_particle);
 
@@ -216,13 +245,15 @@ void ParseCSVFiles(Int_t run_n = 0) {
         // convert the line into a TString, then split
         token = ((TString)line).Tokenize(",");
 
-        current_eventID = ((TString)(token->At(0)->GetName())).Atoi();      // [0] eventID
-        aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();         // [1] trackID
-        aux_its_hit.layerNb = ((TString)(token->At(2)->GetName())).Atoi();  // [2] layerNb
-        aux_its_hit.x = ((TString)(token->At(3)->GetName())).Atof();        // [3] x
-        aux_its_hit.y = ((TString)(token->At(4)->GetName())).Atof();        // [4] y
-        aux_its_hit.z = ((TString)(token->At(5)->GetName())).Atof();        // [5] z
-        aux_its_hit.edep = ((TString)(token->At(6)->GetName())).Atof();     // [6] edep
+        current_eventID = ((TString)(token->At(0)->GetName())).Atoi();            // [0] eventID
+        aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();               // [1] trackID
+        aux_its_hit.layerNb = ((TString)(token->At(2)->GetName())).Atoi();        // [2] layerNb
+        aux_its_hit.x = ((TString)(token->At(3)->GetName())).Atof();              // [3] x
+        aux_its_hit.y = ((TString)(token->At(4)->GetName())).Atof();              // [4] y
+        aux_its_hit.z = ((TString)(token->At(5)->GetName())).Atof();              // [5] z
+        aux_its_hit.px = ((TString)(token->At(6)->GetName())).Atof() * MeVToGeV;  // [6] px
+        aux_its_hit.py = ((TString)(token->At(7)->GetName())).Atof() * MeVToGeV;  // [7] py
+        aux_its_hit.pz = ((TString)(token->At(8)->GetName())).Atof() * MeVToGeV;  // [8] pz
 
         // get index from the track ID
         aux_index = part_index[current_eventID][aux_track_id];
@@ -258,16 +289,15 @@ void ParseCSVFiles(Int_t run_n = 0) {
         // convert the line into a TString, then split
         token = ((TString)line).Tokenize(",");
 
-        current_eventID = ((TString)(token->At(0)->GetName())).Atoi();   //   [0] eventID
-        aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();      //   [1] trackID
-        aux_tpc_hit.x = ((TString)(token->At(2)->GetName())).Atof();     //   [2] x
-        aux_tpc_hit.y = ((TString)(token->At(3)->GetName())).Atof();     //   [3] y
-        aux_tpc_hit.z = ((TString)(token->At(4)->GetName())).Atof();     //   [4] z
-        aux_tpc_hit.px = ((TString)(token->At(5)->GetName())).Atof();    //   [5] px
-        aux_tpc_hit.py = ((TString)(token->At(6)->GetName())).Atof();    //   [6] py
-        aux_tpc_hit.pz = ((TString)(token->At(7)->GetName())).Atof();    //   [7] pz
-        aux_tpc_hit.time = ((TString)(token->At(8)->GetName())).Atof();  //   [8] time
-        aux_tpc_hit.edep = ((TString)(token->At(9)->GetName())).Atof();  //   [9] edep
+        current_eventID = ((TString)(token->At(0)->GetName())).Atoi();            //   [0] eventID
+        aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();               //   [1] trackID
+        aux_tpc_hit.x = ((TString)(token->At(2)->GetName())).Atof();              //   [2] x
+        aux_tpc_hit.y = ((TString)(token->At(3)->GetName())).Atof();              //   [3] y
+        aux_tpc_hit.z = ((TString)(token->At(4)->GetName())).Atof();              //   [4] z
+        aux_tpc_hit.px = ((TString)(token->At(5)->GetName())).Atof() * MeVToGeV;  //   [5] px
+        aux_tpc_hit.py = ((TString)(token->At(6)->GetName())).Atof() * MeVToGeV;  //   [6] py
+        aux_tpc_hit.pz = ((TString)(token->At(7)->GetName())).Atof() * MeVToGeV;  //   [7] pz
+        aux_tpc_hit.edep = ((TString)(token->At(9)->GetName())).Atof();           //   [9] edep
 
         // get index from the track ID
         aux_index = part_index[current_eventID][aux_track_id];
@@ -278,63 +308,123 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
     tpc_file.close();
 
-    /** TPC Tracking **/
+    /** Tracking **/
     /* (now that all hits are loaded) */
 
     Double_t p_ini;
-    Bool_t circlefit_state, helixfit_state;
+
+    Double_t x_c, y_c, radius, chi2_circle;
+    Bool_t circlefit_state;
+
+    Double_t angle, charge, chi2_helix;
+    Int_t direction;
+    Bool_t helixfit_state;
+
+    Int_t n_its_hits, n_tpc_hits;
 
     for (Event_tt &evt : Events) {
         for (Particle_tt &part : evt.particles) {
 
-            /* Load hits info */
-
-            Int_t n_tpc_hits = (Int_t)part.tpc_hits.size();
-            Double_t tpc_x[n_tpc_hits];
-            Double_t tpc_y[n_tpc_hits];
-            Double_t tpc_z[n_tpc_hits];
-            Double_t tpc_edep[n_tpc_hits];
-
-            for (Int_t hit_idx = 0; hit_idx < n_tpc_hits; hit_idx++) {
-                tpc_x[hit_idx] = part.tpc_hits[hit_idx].x;
-                tpc_y[hit_idx] = part.tpc_hits[hit_idx].y;
-                tpc_z[hit_idx] = part.tpc_hits[hit_idx].z;
-                tpc_edep[hit_idx] = part.tpc_hits[hit_idx].edep;
-            }
-
-            /* Protection cuts */
-
-            if (n_tpc_hits < 100) continue;
+            /* Protection */
 
             p_ini = TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini + part.pz_ini * part.pz_ini);
-            if (p_ini < 10) continue;
+            if (p_ini < 0.01) continue;
 
-            /* Fit TPC hits to a circle */
+            /** ITS Tracking **/
 
-            Double_t x_c, y_c, radius, chi2_circle;
-            circlefit_state = LeastSquaresCircleFit(n_tpc_hits, tpc_x, tpc_y, x_c, y_c, radius, chi2_circle);
+            n_its_hits = (Int_t)part.its_hits.size();
 
-            /* Fit TPC hits to helix */
+            if (n_its_hits > 3) {
 
-            Double_t angle, charge, chi2_helix;
-            Int_t direction;
-            helixfit_state = HelixFit(n_tpc_hits, tpc_x, tpc_y, tpc_z, x_c, y_c, radius, angle, charge, direction, chi2_helix);
+                Double_t its_x[n_its_hits];
+                Double_t its_y[n_its_hits];
+                Double_t its_z[n_its_hits];
 
-            /* Compute the differential energy loss of the particle */
+                for (Int_t hit_idx = 0; hit_idx < n_its_hits; hit_idx++) {
+                    its_x[hit_idx] = part.its_hits[hit_idx].x;
+                    its_y[hit_idx] = part.its_hits[hit_idx].y;
+                    its_z[hit_idx] = part.its_hits[hit_idx].z;
+                }
 
-            Double_t dx, dE_dx;
-            EnergyLoss(n_tpc_hits, tpc_edep, tpc_x, tpc_y, tpc_z, dE_dx, dx);
+                /* Fit ITS hits to a circle */
 
-            /* Store results */
+                circlefit_state = LeastSquaresCircleFit(n_its_hits, its_x, its_y, x_c, y_c, radius, chi2_circle);
 
-            part.pt_rec = 0.3 * 0.2 * radius * cmTom;
-            part.pz_rec = direction * part.pt_rec * TMath::Abs(TMath::Tan(angle)) * GeVToMeV;
-            part.p_rec = TMath::Sqrt(part.pt_rec * part.pt_rec + part.pz_rec * part.pz_rec);
-            part.charge_rec = charge;
-            part.chi2_circle = chi2_circle;
-            part.chi2_helix = chi2_helix;
-            part.dx = dx;
-            part.dE_dx = dE_dx;
+                /* Fit ITS hits to helix */
+
+                helixfit_state = HelixFit(n_its_hits, its_x, its_y, its_z, x_c, y_c, radius, angle, charge, direction, chi2_helix);
+
+                /* Store results */
+
+                part.its_fh_px = part.its_hits[0].px;
+                part.its_fh_py = part.its_hits[0].py;
+                part.its_fh_pt = TMath::Sqrt(part.its_fh_px * part.its_fh_px + part.its_fh_py * part.its_fh_py);
+                part.its_fh_pz = part.its_hits[0].pz;
+                part.its_fh_p = TMath::Sqrt(part.its_fh_pt * part.its_fh_pt + part.its_fh_pz * part.its_fh_pz);
+
+                part.its_lh_px = part.its_hits[n_its_hits - 1].px;
+                part.its_lh_py = part.its_hits[n_its_hits - 1].py;
+                part.its_lh_pt = TMath::Sqrt(part.its_lh_px * part.its_lh_px + part.its_lh_py * part.its_lh_py);
+                part.its_lh_pz = part.its_hits[n_its_hits - 1].pz;
+                part.its_lh_p = TMath::Sqrt(part.its_lh_pt * part.its_lh_pt + part.its_lh_pz * part.its_lh_pz);
+
+                part.its_pt_rec = 0.3 * 0.2 * radius * cmTom;
+                part.its_pz_rec = direction * part.its_pt_rec * TMath::Abs(TMath::Tan(angle)) * GeVToMeV;
+                part.its_p_rec = TMath::Sqrt(part.its_pt_rec * part.its_pt_rec + part.its_pz_rec * part.its_pz_rec);
+                part.its_charge_rec = charge;
+                part.its_chi2_circle = chi2_circle;
+                part.its_chi2_helix = chi2_helix;
+            }
+
+            /** TPC Tracking **/
+
+            n_tpc_hits = (Int_t)part.tpc_hits.size();
+
+            if (n_tpc_hits >= 100) {
+
+                Double_t tpc_x[n_tpc_hits];
+                Double_t tpc_y[n_tpc_hits];
+                Double_t tpc_z[n_tpc_hits];
+                Double_t tpc_edep[n_tpc_hits];
+
+                for (Int_t hit_idx = 0; hit_idx < n_tpc_hits; hit_idx++) {
+                    tpc_x[hit_idx] = part.tpc_hits[hit_idx].x;
+                    tpc_y[hit_idx] = part.tpc_hits[hit_idx].y;
+                    tpc_z[hit_idx] = part.tpc_hits[hit_idx].z;
+                    tpc_edep[hit_idx] = part.tpc_hits[hit_idx].edep;
+                }
+
+                /* Fit TPC hits to a circle */
+
+                circlefit_state = LeastSquaresCircleFit(n_tpc_hits, tpc_x, tpc_y, x_c, y_c, radius, chi2_circle);
+
+                /* Fit TPC hits to helix */
+
+                helixfit_state = HelixFit(n_tpc_hits, tpc_x, tpc_y, tpc_z, x_c, y_c, radius, angle, charge, direction, chi2_helix);
+
+                /* Compute the differential energy loss of the particle */
+
+                Double_t dx, dE_dx;
+                EnergyLoss(n_tpc_hits, tpc_edep, tpc_x, tpc_y, tpc_z, dE_dx, dx);
+
+                /* Store results */
+
+                part.tpc_fh_px = part.tpc_hits[0].px;
+                part.tpc_fh_py = part.tpc_hits[0].py;
+                part.tpc_fh_pt = TMath::Sqrt(part.tpc_fh_px * part.tpc_fh_px + part.tpc_fh_py * part.tpc_fh_py);
+                part.tpc_fh_pz = part.tpc_hits[0].pz;
+                part.tpc_fh_p = TMath::Sqrt(part.tpc_fh_pt * part.tpc_fh_pt + part.tpc_fh_pz * part.tpc_fh_pz);
+
+                part.tpc_pt_rec = 0.3 * 0.2 * radius * cmTom;
+                part.tpc_pz_rec = direction * part.tpc_pt_rec * TMath::Abs(TMath::Tan(angle)) * GeVToMeV;
+                part.tpc_p_rec = TMath::Sqrt(part.tpc_pt_rec * part.tpc_pt_rec + part.tpc_pz_rec * part.tpc_pz_rec);
+                part.tpc_charge_rec = charge;
+                part.tpc_chi2_circle = chi2_circle;
+                part.tpc_chi2_helix = chi2_helix;
+
+                part.tpc_dx = dx;
+                part.tpc_dE_dx = dE_dx;
+            }
         }
     }
 
@@ -359,15 +449,36 @@ void ParseCSVFiles(Int_t run_n = 0) {
     std::vector<Bool_t> aux_isPrimary;
     std::vector<Float_t> aux_charge;
     std::vector<Int_t> aux_nITShits;
+    std::vector<Float_t> aux_ITS_Pt_rec;
+    std::vector<Float_t> aux_ITS_Pz_rec;
+    std::vector<Float_t> aux_ITS_P_rec;
+    std::vector<Float_t> aux_ITS_charge_rec;
+    std::vector<Float_t> aux_ITS_chi2_circle;
+    std::vector<Float_t> aux_ITS_chi2_helix;
+    std::vector<Float_t> aux_ITS_FH_Px;
+    std::vector<Float_t> aux_ITS_FH_Py;
+    std::vector<Float_t> aux_ITS_FH_Pt;
+    std::vector<Float_t> aux_ITS_FH_Pz;
+    std::vector<Float_t> aux_ITS_FH_P;
+    std::vector<Float_t> aux_ITS_LH_Px;
+    std::vector<Float_t> aux_ITS_LH_Py;
+    std::vector<Float_t> aux_ITS_LH_Pt;
+    std::vector<Float_t> aux_ITS_LH_Pz;
+    std::vector<Float_t> aux_ITS_LH_P;
     std::vector<Int_t> aux_nTPChits;
-    std::vector<Float_t> aux_Pt_rec;
-    std::vector<Float_t> aux_Pz_rec;
-    std::vector<Float_t> aux_P_rec;
-    std::vector<Float_t> aux_charge_rec;
-    std::vector<Float_t> aux_chi2_circle;
-    std::vector<Float_t> aux_chi2_helix;
-    std::vector<Float_t> aux_dx;
-    std::vector<Float_t> aux_dEdx;
+    std::vector<Float_t> aux_TPC_Pt_rec;
+    std::vector<Float_t> aux_TPC_Pz_rec;
+    std::vector<Float_t> aux_TPC_P_rec;
+    std::vector<Float_t> aux_TPC_charge_rec;
+    std::vector<Float_t> aux_TPC_chi2_circle;
+    std::vector<Float_t> aux_TPC_chi2_helix;
+    std::vector<Float_t> aux_TPC_dx;
+    std::vector<Float_t> aux_TPC_dEdx;
+    std::vector<Float_t> aux_TPC_FH_Px;
+    std::vector<Float_t> aux_TPC_FH_Py;
+    std::vector<Float_t> aux_TPC_FH_Pt;
+    std::vector<Float_t> aux_TPC_FH_Pz;
+    std::vector<Float_t> aux_TPC_FH_P;
 
     // set tree branches
     output_tree->Branch("eventID", &aux_eventID);
@@ -383,15 +494,36 @@ void ParseCSVFiles(Int_t run_n = 0) {
     output_tree->Branch("isPrimary", &aux_isPrimary);
     output_tree->Branch("charge", &aux_charge);
     output_tree->Branch("nITShits", &aux_nITShits);
+    output_tree->Branch("ITS_Pt_rec", &aux_ITS_Pt_rec);
+    output_tree->Branch("ITS_Pz_rec", &aux_ITS_Pz_rec);
+    output_tree->Branch("ITS_P_rec", &aux_ITS_P_rec);
+    output_tree->Branch("ITS_charge_rec", &aux_ITS_charge_rec);
+    output_tree->Branch("ITS_chi2_circle", &aux_ITS_chi2_circle);
+    output_tree->Branch("ITS_chi2_helix", &aux_ITS_chi2_helix);
+    output_tree->Branch("ITS_FH_Px", &aux_ITS_FH_Px);
+    output_tree->Branch("ITS_FH_Py", &aux_ITS_FH_Py);
+    output_tree->Branch("ITS_FH_Pt", &aux_ITS_FH_Pt);
+    output_tree->Branch("ITS_FH_Pz", &aux_ITS_FH_Pz);
+    output_tree->Branch("ITS_FH_P", &aux_ITS_FH_P);
+    output_tree->Branch("ITS_LH_Px", &aux_ITS_LH_Px);
+    output_tree->Branch("ITS_LH_Py", &aux_ITS_LH_Py);
+    output_tree->Branch("ITS_LH_Pt", &aux_ITS_LH_Pt);
+    output_tree->Branch("ITS_LH_Pz", &aux_ITS_LH_Pz);
+    output_tree->Branch("ITS_LH_P", &aux_ITS_LH_P);
     output_tree->Branch("nTPChits", &aux_nTPChits);
-    output_tree->Branch("Pt_rec", &aux_Pt_rec);
-    output_tree->Branch("Pz_rec", &aux_Pz_rec);
-    output_tree->Branch("P_rec", &aux_P_rec);
-    output_tree->Branch("charge_rec", &aux_charge_rec);
-    output_tree->Branch("chi2_circle", &aux_chi2_circle);
-    output_tree->Branch("chi2_helix", &aux_chi2_helix);
-    output_tree->Branch("dx", &aux_dx);
-    output_tree->Branch("dEdx", &aux_dEdx);
+    output_tree->Branch("TPC_Pt_rec", &aux_TPC_Pt_rec);
+    output_tree->Branch("TPC_Pz_rec", &aux_TPC_Pz_rec);
+    output_tree->Branch("TPC_P_rec", &aux_TPC_P_rec);
+    output_tree->Branch("TPC_charge_rec", &aux_TPC_charge_rec);
+    output_tree->Branch("TPC_chi2_circle", &aux_TPC_chi2_circle);
+    output_tree->Branch("TPC_chi2_helix", &aux_TPC_chi2_helix);
+    output_tree->Branch("TPC_dx", &aux_TPC_dx);
+    output_tree->Branch("TPC_dEdx", &aux_TPC_dEdx);
+    output_tree->Branch("TPC_FH_Px", &aux_TPC_FH_Px);
+    output_tree->Branch("TPC_FH_Py", &aux_TPC_FH_Py);
+    output_tree->Branch("TPC_FH_Pt", &aux_TPC_FH_Pt);
+    output_tree->Branch("TPC_FH_Pz", &aux_TPC_FH_Pz);
+    output_tree->Branch("TPC_FH_P", &aux_TPC_FH_P);
 
     for (Event_tt &evt : Events) {
 
@@ -401,14 +533,14 @@ void ParseCSVFiles(Int_t run_n = 0) {
 
             /* Cuts */
 
-            if ((Int_t)part.tpc_hits.size() < 100) continue;
+            // if ((Int_t)part.tpc_hits.size() < 100) continue;
 
             p_ini = TMath::Sqrt(part.px_ini * part.px_ini + part.py_ini * part.py_ini + part.pz_ini * part.pz_ini);
-            if (p_ini < 10) continue;
+            if (p_ini < 0.01) continue;
 
-            if (part.chi2_helix > 100) continue;
+            // if (part.tpc_chi2_helix > 100) continue;
 
-            if (part.chi2_circle > 5) continue;
+            // if (part.tpc_chi2_circle > 5) continue;
 
             aux_trackID.push_back(part.trackID);
             aux_PDGcode.push_back(part.PDGcode);
@@ -422,15 +554,36 @@ void ParseCSVFiles(Int_t run_n = 0) {
             aux_isPrimary.push_back(part.is_primary);
             aux_charge.push_back(part.charge);
             aux_nITShits.push_back((Int_t)part.its_hits.size());
+            aux_ITS_Pt_rec.push_back(part.its_pt_rec);
+            aux_ITS_Pz_rec.push_back(part.its_pz_rec);
+            aux_ITS_P_rec.push_back(part.its_p_rec);
+            aux_ITS_charge_rec.push_back(part.its_charge_rec);
+            aux_ITS_chi2_circle.push_back(part.its_chi2_circle);
+            aux_ITS_chi2_helix.push_back(part.its_chi2_helix);
+            aux_ITS_FH_Px.push_back(part.its_fh_px);
+            aux_ITS_FH_Py.push_back(part.its_fh_py);
+            aux_ITS_FH_Pt.push_back(part.its_fh_pt);
+            aux_ITS_FH_Pz.push_back(part.its_fh_pz);
+            aux_ITS_FH_P.push_back(part.its_fh_p);
+            aux_ITS_LH_Px.push_back(part.its_lh_px);
+            aux_ITS_LH_Py.push_back(part.its_lh_py);
+            aux_ITS_LH_Pt.push_back(part.its_lh_pt);
+            aux_ITS_LH_Pz.push_back(part.its_lh_pz);
+            aux_ITS_LH_P.push_back(part.its_lh_p);
             aux_nTPChits.push_back((Int_t)part.tpc_hits.size());
-            aux_Pt_rec.push_back(part.pt_rec);
-            aux_Pz_rec.push_back(part.pz_rec);
-            aux_P_rec.push_back(part.p_rec);
-            aux_charge_rec.push_back(part.charge_rec);
-            aux_chi2_circle.push_back(part.chi2_circle);
-            aux_chi2_helix.push_back(part.chi2_helix);
-            aux_dx.push_back(part.dx);
-            aux_dEdx.push_back(part.dE_dx);
+            aux_TPC_Pt_rec.push_back(part.tpc_pt_rec);
+            aux_TPC_Pz_rec.push_back(part.tpc_pz_rec);
+            aux_TPC_P_rec.push_back(part.tpc_p_rec);
+            aux_TPC_charge_rec.push_back(part.tpc_charge_rec);
+            aux_TPC_chi2_circle.push_back(part.tpc_chi2_circle);
+            aux_TPC_chi2_helix.push_back(part.tpc_chi2_helix);
+            aux_TPC_dx.push_back(part.tpc_dx);
+            aux_TPC_dEdx.push_back(part.tpc_dE_dx);
+            aux_TPC_FH_Px.push_back(part.tpc_fh_px);
+            aux_TPC_FH_Py.push_back(part.tpc_fh_py);
+            aux_TPC_FH_Pt.push_back(part.tpc_fh_pt);
+            aux_TPC_FH_Pz.push_back(part.tpc_fh_pz);
+            aux_TPC_FH_P.push_back(part.tpc_fh_p);
         }
 
         // at the end of the event
@@ -449,15 +602,36 @@ void ParseCSVFiles(Int_t run_n = 0) {
         aux_isPrimary.clear();
         aux_charge.clear();
         aux_nITShits.clear();
+        aux_ITS_Pt_rec.clear();
+        aux_ITS_Pz_rec.clear();
+        aux_ITS_P_rec.clear();
+        aux_ITS_charge_rec.clear();
+        aux_ITS_chi2_circle.clear();
+        aux_ITS_chi2_helix.clear();
+        aux_ITS_FH_Px.clear();
+        aux_ITS_FH_Py.clear();
+        aux_ITS_FH_Pt.clear();
+        aux_ITS_FH_Pz.clear();
+        aux_ITS_FH_P.clear();
+        aux_ITS_LH_Px.clear();
+        aux_ITS_LH_Py.clear();
+        aux_ITS_LH_Pt.clear();
+        aux_ITS_LH_Pz.clear();
+        aux_ITS_LH_P.clear();
         aux_nTPChits.clear();
-        aux_Pt_rec.clear();
-        aux_Pz_rec.clear();
-        aux_P_rec.clear();
-        aux_charge_rec.clear();
-        aux_chi2_circle.clear();
-        aux_chi2_helix.clear();
-        aux_dx.clear();
-        aux_dEdx.clear();
+        aux_TPC_Pt_rec.clear();
+        aux_TPC_Pz_rec.clear();
+        aux_TPC_P_rec.clear();
+        aux_TPC_charge_rec.clear();
+        aux_TPC_chi2_circle.clear();
+        aux_TPC_chi2_helix.clear();
+        aux_TPC_dx.clear();
+        aux_TPC_dEdx.clear();
+        aux_TPC_FH_Px.clear();
+        aux_TPC_FH_Py.clear();
+        aux_TPC_FH_Pt.clear();
+        aux_TPC_FH_Pz.clear();
+        aux_TPC_FH_P.clear();
     }
 
     output_tree->Write();
