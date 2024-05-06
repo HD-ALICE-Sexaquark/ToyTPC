@@ -380,6 +380,8 @@ void EventAction::StoreEvent(const G4Event* event) {
     G4int its_layer_n;
     G4ThreeVector its_position;
     G4double its_x, its_y, its_z;
+    G4ThreeVector its_momentum;
+    G4double its_px, its_py, its_pz;
     G4double its_edep;
     G4String its_process;
 
@@ -393,11 +395,16 @@ void EventAction::StoreEvent(const G4Event* event) {
         its_x = its_position.x();
         its_y = its_position.y();
         its_z = its_position.z();
+        its_momentum = its_hit->GetMomentum();
+        its_px = its_momentum.x();
+        its_py = its_momentum.y();
+        its_pz = its_momentum.z();
         its_edep = its_hit->GetEdep();
         its_process = its_hit->GetProcess();
 
-        fITSFile << its_trackID << "," << its_layer_n << ","                     //
-                 << its_x / cm << "," << its_y / cm << "," << its_z / cm << ","  //
+        fITSFile << its_trackID << "," << its_layer_n << ","                           //
+                 << its_x / cm << "," << its_y / cm << "," << its_z / cm << ","        //
+                 << its_px / MeV << "," << its_py / MeV << "," << its_pz / MeV << ","  //
                  << its_edep / MeV << "," << its_process << G4endl;
     }
 

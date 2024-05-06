@@ -68,7 +68,7 @@ Generation and reconstruction of low-pT charged particles (pions, kaons, protons
   - `eventXX_its.csv` contains the ITS2 hits information, where each line correspond to a different **hit** with the following format:
 
   ```
-  trackID, layer number, x (cm), y (cm), z (cm), deposited energy (MeV), generation process
+  trackID, layer number, x (cm), y (cm), z (cm), Px (MeV/c), Py (MeV/c), Pz (MeV/c), deposited energy (MeV), generation process
   ```
 
   - `eventXX_tpc.csv` contains the TPC hits information, where each line correspond to a different **hit** with the following format:
