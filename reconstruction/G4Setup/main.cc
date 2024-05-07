@@ -122,6 +122,7 @@ int main(int argc, char** argv) {
     const G4Run* run = nullptr;
     const std::vector<const G4Event*>* events = nullptr;
     G4int nKeptEvents;
+    G4int nAttempts = 1000;  // hardcoded value, so job doesn't run forever
 
     // Process macro or start UI session
     if (!ui) {
@@ -134,7 +135,7 @@ int main(int argc, char** argv) {
         UImanager->ApplyCommand("/ALICE/its_file " + output_filename_ITS);
         UImanager->ApplyCommand("/ALICE/tpc_file " + output_filename_TPC);
         UImanager->ApplyCommand("/globalField/setValue 0 0 0.2 tesla");
-        while (true) {
+        for (G4int i = 0; i < nAttempts; i++) {
             UImanager->ApplyCommand("/run/beamOn 1");
             run = runManager ? runManager->GetCurrentRun() : nullptr;
             events = run ? run->GetEventVector() : nullptr;
