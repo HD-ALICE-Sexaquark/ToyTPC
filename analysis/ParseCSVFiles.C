@@ -114,13 +114,15 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
 
     // set input/output filenames -- hardcoded (not anymore :))
 
-    TString simdir = "/misc/alidata130/alice_u/kleine/software/ToyTPC/output/";
+    // TString simdir = "/misc/alidata130/alice_u/kleine/software/ToyTPC/output/";
+    TString simdir = "/misc/alidata130/alice_u/borquez/toy/sims/low-pt-tracks-rec/";
 
     TString input_traj_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_traj.csv", run_n);
     TString input_its_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_its.csv", run_n);
     TString input_tpc_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_tpc.csv", run_n);
 
-    TString output_filename = Form("run%02d_ana.root", run_n);
+    // TString output_filename = Form("run%02d_ana.root", run_n);
+    TString output_filename = Form("/misc/alidata121/alice_u/borquez/toytpc/output/run%02d_ana.root", run_n);
 
     // temporary test snippet
     /*
@@ -368,12 +370,25 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
                 part.its_lh_pz = part.its_hits[n_its_hits - 1].pz;
                 part.its_lh_p = TMath::Sqrt(part.its_lh_pt * part.its_lh_pt + part.its_lh_pz * part.its_lh_pz);
 
-                part.its_pt_rec = 0.3 * 0.2 * radius * cmTom;
-                part.its_pz_rec = direction * part.its_pt_rec * TMath::Abs(TMath::Tan(angle)) * GeVToMeV;
-                part.its_p_rec = TMath::Sqrt(part.its_pt_rec * part.its_pt_rec + part.its_pz_rec * part.its_pz_rec);
-                part.its_charge_rec = charge;
-                part.its_chi2_circle = chi2_circle;
-                part.its_chi2_helix = chi2_helix;
+                part.its_pt_rec = -666;
+                part.its_chi2_circle = -666;
+
+                if (circlefit_state) {
+                    part.its_pt_rec = 0.3 * 0.2 * radius * cmTom;
+                    part.its_chi2_circle = chi2_circle;
+                }
+
+                part.its_pz_rec = -666;
+                part.its_p_rec = -666;
+                part.its_charge_rec = -666;
+                part.its_chi2_helix = -666;
+
+                if (circlefit_state && helixfit_state) {
+                    part.its_pz_rec = direction * part.its_pt_rec * TMath::Abs(TMath::Tan(angle)) * GeVToMeV;
+                    part.its_p_rec = TMath::Sqrt(part.its_pt_rec * part.its_pt_rec + part.its_pz_rec * part.its_pz_rec);
+                    part.its_charge_rec = charge;
+                    part.its_chi2_helix = chi2_helix;
+                }
             }
 
             /** TPC Tracking **/
@@ -415,12 +430,25 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
                 part.tpc_fh_pz = part.tpc_hits[0].pz;
                 part.tpc_fh_p = TMath::Sqrt(part.tpc_fh_pt * part.tpc_fh_pt + part.tpc_fh_pz * part.tpc_fh_pz);
 
-                part.tpc_pt_rec = 0.3 * 0.2 * radius * cmTom;
-                part.tpc_pz_rec = direction * part.tpc_pt_rec * TMath::Abs(TMath::Tan(angle)) * GeVToMeV;
-                part.tpc_p_rec = TMath::Sqrt(part.tpc_pt_rec * part.tpc_pt_rec + part.tpc_pz_rec * part.tpc_pz_rec);
-                part.tpc_charge_rec = charge;
-                part.tpc_chi2_circle = chi2_circle;
-                part.tpc_chi2_helix = chi2_helix;
+                part.tpc_pt_rec = -666;
+                part.tpc_chi2_circle = -666;
+
+                if (circlefit_state) {
+                    part.tpc_pt_rec = 0.3 * 0.2 * radius * cmTom;
+                    part.tpc_chi2_circle = chi2_circle;
+                }
+
+                part.tpc_pz_rec = -666;
+                part.tpc_p_rec = -666;
+                part.tpc_charge_rec = -666;
+                part.tpc_chi2_helix = -666;
+
+                if (circlefit_state && helixfit_state) {
+                    part.tpc_pz_rec = direction * part.tpc_pt_rec * TMath::Abs(TMath::Tan(angle)) * GeVToMeV;
+                    part.tpc_p_rec = TMath::Sqrt(part.tpc_pt_rec * part.tpc_pt_rec + part.tpc_pz_rec * part.tpc_pz_rec);
+                    part.tpc_charge_rec = charge;
+                    part.tpc_chi2_helix = chi2_helix;
+                }
 
                 part.tpc_dx = dx;
                 part.tpc_dE_dx = dE_dx;
