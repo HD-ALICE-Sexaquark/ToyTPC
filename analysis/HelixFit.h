@@ -27,8 +27,8 @@ Double_t HelixMinFcn(Int_t N, Double_t *x, Double_t *y, Double_t *z, Double_t x_
   - Return: `true` if successful, `false` if fit failed
   Reference: https://www.geometrictools.com/Documentation/HelixFitting.pdf
 */
-Bool_t HelixFit(Int_t N, Double_t *x, Double_t *y, Double_t *z, Double_t x_c, Double_t y_c, Double_t r, Double_t &angle, Double_t &charge,
-                Int_t &direction, Double_t &chi2) {
+Bool_t HelixFit(Int_t N, Double_t *x, Double_t *y, Double_t *z, Double_t x_c, Double_t y_c, Double_t r, Double_t &omega, Double_t &phi,
+                Double_t &angle, Double_t &charge, Int_t &direction, Double_t &chi2) {
 
     auto chi2Function = [&](const Double_t *par) { return HelixMinFcn(N, x, y, z, x_c, y_c, r, par[0], par[1]); };
 
@@ -48,8 +48,8 @@ Bool_t HelixFit(Int_t N, Double_t *x, Double_t *y, Double_t *z, Double_t x_c, Do
     }
     const ROOT::Fit::FitResult &result = fitter.Result();
 
-    Double_t omega = result.Parameter(0);
-    Double_t phi = result.Parameter(1);
+    omega = result.Parameter(0);
+    phi = result.Parameter(1);
 
     angle = TMath::ATan((1 / (r * omega)));
     direction = (Int_t)TMath::Sign(1, z[1] - z[0]);

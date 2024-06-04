@@ -16,6 +16,7 @@
 #include "EnergyLoss.h"
 #include "HelixFit.h"
 #include "LeastSquaresCircleFit.h"
+#include "PointToHelixDCA.h"
 
 /*** STRUCTURES ***/
 
@@ -109,30 +110,35 @@ struct Event_tt {
 };
 
 /*** MAIN ***/
-
+/*
 void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
 
     // set input/output filenames -- hardcoded (not anymore :))
 
-    // TString simdir = "/misc/alidata130/alice_u/kleine/software/ToyTPC/output/";
-    TString simdir = "/misc/alidata130/alice_u/borquez/toy/sims/low-pt-tracks-rec/";
+    TString simdir = "/misc/alidata130/alice_u/kleine/software/ToyTPC/output/";
 
     TString input_traj_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_traj.csv", run_n);
     TString input_its_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_its.csv", run_n);
     TString input_tpc_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_tpc.csv", run_n);
 
-    // TString output_filename = Form("run%02d_ana.root", run_n);
-    TString output_filename = Form("/misc/alidata121/alice_u/borquez/toytpc/output/run%02d_ana.root", run_n);
+    TString output_filename = Form("run%02d_ana.root", run_n);
+ */
+/*
+// temporary test snippet
+void ParseCSVFiles(Int_t run_n = 0) {
 
-    // temporary test snippet
-    /*
-    void ParseCSVFiles(Int_t run_n = 0) {
+    TString input_traj_file = Form("run%02d_traj_itest.csv", run_n);
+    TString input_its_file = Form("run%02d_its_itest.csv", run_n);
+    TString input_tpc_file = Form("run%02d_tpc_itest.csv", run_n);
+    TString output_filename = Form("run%02d_ana_itest.root", run_n);
+ */
+// temporary test snippet
+void ParseCSVFiles(Int_t run_n = 0) {
 
-        TString input_traj_file = Form("run%02d_traj_itest.csv", run_n);
-        TString input_its_file = Form("run%02d_its_itest.csv", run_n);
-        TString input_tpc_file = Form("run%02d_tpc_itest.csv", run_n);
-        TString output_filename = Form("run%02d_ana_itest.root", run_n);
-    */
+    TString input_traj_file = Form("event%01d_traj_sec.csv", run_n);
+    TString input_its_file = Form("event%01d_its_sec.csv", run_n);
+    TString input_tpc_file = Form("event%01d_tpc_sec.csv", run_n);
+    TString output_filename = Form("event%01d_ana_sec.root", run_n);
 
     // conversion factors
     const Double_t MeVToGeV = 1E-3;
@@ -318,6 +324,7 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
     Double_t x_c, y_c, radius, chi2_circle;
     Bool_t circlefit_state;
 
+    Double_t helix_omega, helix_phi;
     Double_t angle, charge, chi2_helix;
     Int_t direction;
     Bool_t helixfit_state;
@@ -354,7 +361,8 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
 
                 /* Fit ITS hits to helix */
 
-                helixfit_state = HelixFit(n_its_hits, its_x, its_y, its_z, x_c, y_c, radius, angle, charge, direction, chi2_helix);
+                helixfit_state = HelixFit(n_its_hits, its_x, its_y, its_z, x_c, y_c, radius, helix_omega, helix_phi, angle, charge,
+                                          direction, chi2_helix);
 
                 /* Store results */
 
@@ -415,7 +423,23 @@ void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
 
                 /* Fit TPC hits to helix */
 
-                helixfit_state = HelixFit(n_tpc_hits, tpc_x, tpc_y, tpc_z, x_c, y_c, radius, angle, charge, direction, chi2_helix);
+                helixfit_state = HelixFit(n_tpc_hits, tpc_x, tpc_y, tpc_z, x_c, y_c, radius, helix_omega, helix_phi, angle, charge,
+                                          direction, chi2_helix);
+
+                if (helixfit_state) {
+                    Double_t pv[3] = {0., 0., 0.};
+                    Double_t helix_params[5] = {x_c, y_c, radius, helix_omega, helix_phi};
+                    TVector3 pca_wrt_pv(0., 0., 0.);
+                    Double_t dca_wrt_pv = CalculatePointToHelixDCA(pv, helix_params, pca_wrt_pv);
+                    Double_t helix_eval_x = radius * TMath::Cos(helix_omega * 0. + helix_phi) + x_c;
+                    Double_t helix_eval_y = radius * TMath::Sin(helix_omega * 0. + helix_phi) + y_c;
+                    Double_t helix_eval_z = helix_omega * 0.;
+                    printf(
+                        "PDG: %i, IsPrimary: %i, helix evaluated at (z=0) : (%.3f, %.3f, %.3f), DCA wrt PV: %.3f, PCA wrt PV: (%.3f, %.3f, "
+                        "%.3f)\n",
+                        part.PDGcode, (Int_t)part.is_primary, helix_eval_x, helix_eval_y, helix_eval_z, dca_wrt_pv, pca_wrt_pv.X(),
+                        pca_wrt_pv.Y(), pca_wrt_pv.Z());
+                }
 
                 /* Compute the differential energy loss of the particle */
 
