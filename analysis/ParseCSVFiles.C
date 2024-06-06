@@ -430,7 +430,8 @@ void ParseCSVFiles(Int_t run_n = 0) {
                     Double_t pv[3] = {0., 0., 0.};
                     Double_t helix_params[5] = {x_c, y_c, radius, helix_omega, helix_phi};
                     TVector3 pca_wrt_pv(0., 0., 0.);
-                    Double_t dca_wrt_pv = CalculatePointToHelixDCA(pv, helix_params, pca_wrt_pv);
+                    Double_t sol;
+                    Double_t dca_wrt_pv = CalculatePointToHelixDCA(pv, helix_params, sol, pca_wrt_pv);
                     Double_t helix_eval_x = radius * TMath::Cos(helix_omega * 0. + helix_phi) + x_c;
                     Double_t helix_eval_y = radius * TMath::Sin(helix_omega * 0. + helix_phi) + y_c;
                     Double_t helix_eval_z = helix_omega * 0.;

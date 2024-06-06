@@ -27,10 +27,10 @@ Double_t CalculatePointToLineDCA(Double_t point[], Double_t line_pos[], Double_t
     min->SetVariable(0, "t", 0., 0.01);
     min->Minimize();
 
-    const Double_t* xs = min->X();
-    PCA.SetXYZ(pos[0] + xs[0] * dir[0], pos[1] + xs[0] * dir[1], pos[2] + xs[0] * dir[2]);
+    sol = min->X()[0];
+    PCA.SetXYZ(pos[0] + sol * dir[0], pos[1] + sol * dir[1], pos[2] + sol * dir[2]);
 
-    return TMath::Sqrt(SquaredDistancePointToLine(xs, ref, pos, dir));
+    return TMath::Sqrt(SquaredDistancePointToLine(min->X(), ref, pos, dir));
 }
 
 void SimpleMinimizer() {

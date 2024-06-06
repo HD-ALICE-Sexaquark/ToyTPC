@@ -12,11 +12,10 @@
  - Parameters: `linePoint`, `lineDir`, the position and direction of the line.
  - Return: the square of the distance between the point and the line.
 */
-Double_t SquaredDistancePointToHelix(const Double_t* t, Double_t point[], Double_t x_c, Double_t y_c, Double_t r, Double_t omega,
-                                     Double_t phi) {
-    return TMath::Power(point[0] - r * TMath::Cos(omega * t[0] + phi) - x_c, 2) +  //
-           TMath::Power(point[1] - r * TMath::Sin(omega * t[0] + phi) - y_c, 2) +  //
-           TMath::Power(point[2] - omega * t[0], 2);
+Double_t SquaredDistancePointToHelix(const Double_t* t, Double_t point[], Double_t helix[]) {
+    return TMath::Power(point[0] - helix[2] * TMath::Cos(helix[3] * t[0] + helix[4]) - helix[0], 2) +  //
+           TMath::Power(point[1] - helix[2] * TMath::Sin(helix[3] * t[0] + helix[4]) - helix[1], 2) +  //
+           TMath::Power(point[2] - t[0], 2);
 }
 
 /*
@@ -24,29 +23,23 @@ Double_t SquaredDistancePointToHelix(const Double_t* t, Double_t point[], Double
  - Input: `point`, the point to which we want to calculate the distance
  - Output: `PCA`, the point of closest approach
  - Return: the distance of closest approach
- */
-Double_t CalculatePointToHelixDCA(Double_t point[], Double_t helix_params[], TVector3& PCA) {
+*/
+Double_t CalculatePointToHelixDCA(Double_t point[], Double_t helix_params[], Double_t& sol, TVector3& PCA) {
 
     Double_t ref[3] = {point[0], point[1], point[2]};
-    Double_t x_c = helix_params[0];
-    Double_t y_c = helix_params[1];
-    Double_t r = helix_params[2];
-    Double_t omega = helix_params[3];
-    Double_t phi = helix_params[4];
+    Double_t helix[5] = {helix_params[0], helix_params[1], helix_params[2], helix_params[3], helix_params[4]};
 
-    auto func = [&ref, &x_c, &y_c, &r, &omega, &phi](const Double_t* t) {
-        return SquaredDistancePointToHelix(t, ref, x_c, y_c, r, omega, phi);
-    };
+    auto func = [&ref, &helix](const Double_t* t) { return SquaredDistancePointToHelix(t, ref, helix); };
     ROOT::Math::Functor f(func, 1);
 
     ROOT::Math::Minimizer* min = ROOT::Math::Factory::CreateMinimizer("Minuit", "Migrad");
     min->SetFunction(f);
-    min->SetVariable(0, "t", -999., 0.01);
+    min->SetVariable(0, "t", 0., 0.01);
     min->Minimize();
 
-    const Double_t* xs = min->X();
+    sol = min->X()[0];
+    PCA.SetXYZ(helix[2] * TMath::Cos(helix[3] * sol + helix[4]) + helix[0], helix[2] * TMath::Sin(helix[3] * sol + helix[4]) + helix[1],
+               sol);
 
-    PCA.SetXYZ(r * TMath::Cos(omega * xs[0] + phi) + x_c, r * TMath::Sin(omega * xs[0] + phi) + y_c, xs[0]);
-
-    return TMath::Sqrt(SquaredDistancePointToHelix(xs, ref, x_c, y_c, r, omega, phi));
+    return TMath::Sqrt(SquaredDistancePointToHelix(min->X(), ref, helix));
 }
