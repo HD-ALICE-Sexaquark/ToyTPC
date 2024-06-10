@@ -46,7 +46,7 @@ Bool_t HelixFit(Int_t N, Double_t *x, Double_t *y, Double_t *z, Double_t x_c, Do
     // do the fit
     Bool_t fit_status = fitter.FitFCN();
     if (!fit_status) {
-        std::cerr << "Fit failed!" << std::endl;
+        // std::cerr << "Fit failed!" << std::endl;
         return fit_status;
     }
     const ROOT::Fit::FitResult &result = fitter.Result();

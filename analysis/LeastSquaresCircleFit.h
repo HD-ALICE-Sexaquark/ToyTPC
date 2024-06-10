@@ -72,7 +72,7 @@ Bool_t LeastSquaresCircleFit(Int_t N, Double_t *x, Double_t *y, Double_t &x_c, D
 
     Double_t det = Suu * Svv - Suv * Suv;
     if (det < 1E-6) {
-        std::cerr << "The determinant is too small!" << std::endl;
+        // std::cerr << "The determinant is too small!" << std::endl;
         return kFALSE;
     }
 
