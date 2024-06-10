@@ -4,9 +4,9 @@
 #include "Math/Functor.h"
 #include "TMath.h"
 
-/*
-  Minimisation function computing the sum of squares of residuals looping at the graph points.
-*/
+/**
+ * Minimisation function computing the sum of squares of residuals looping at the graph points.
+ */
 Double_t HelixMinFcn(Int_t N, Double_t *x, Double_t *y, Double_t *z, Double_t x_c, Double_t y_c, Double_t r, Double_t omega, Double_t phi) {
     Double_t dx, dy;
     Double_t res = 0.;  // residual
@@ -18,15 +18,18 @@ Double_t HelixMinFcn(Int_t N, Double_t *x, Double_t *y, Double_t *z, Double_t x_
     return res;
 }
 
-/*
-  From a collection of `N` points, and using `x_c`, `y_c` and `r` from a previous circle fit, fit a helix with the
-  following parametrization:
-  `(x, y, z) = (r*cos(omega*z + phi) + x_c, r*sin(omega*z + phi) + y_c, z)`
-  - Input: `x`, `y`, `z` arrays of length `N`, `x_c`, `y_c`, `r` initial guesses
-  - Output: `angle`, `charge`, `chi2`, `direction`
-  - Return: `true` if successful, `false` if fit failed
-  Reference: https://www.geometrictools.com/Documentation/HelixFitting.pdf
-*/
+/**
+ *  From a collection of `N` points, and using `x_c`, `y_c` and `r` from a previous circle fit, fit a helix with the
+ *  following parametrization:
+ *
+ *  `(x, y, z) = (r*cos(omega*z + phi) + x_c, r*sin(omega*z + phi) + y_c, z)`
+ *
+ *  - Input: `x`, `y`, `z` arrays of length `N`, `x_c`, `y_c`, `r` initial guesses
+ *  - Output: `angle`, `charge`, `chi2`, `direction`
+ *  - Returns: `true` if successful, `false` if fit failed
+ *
+ *  Reference: https://www.geometrictools.com/Documentation/HelixFitting.pdf
+ */
 Bool_t HelixFit(Int_t N, Double_t *x, Double_t *y, Double_t *z, Double_t x_c, Double_t y_c, Double_t r, Double_t &omega, Double_t &phi,
                 Double_t &angle, Double_t &charge, Int_t &direction, Double_t &chi2) {
 

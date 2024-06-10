@@ -20,35 +20,35 @@
 
 /*** STRUCTURES ***/
 
-/*
- Container of ITS hit information.
-*/
+/**
+ * Container of ITS hit information.
+ */
 struct ITSHit_tt {
     Int_t layerNb;
     Float_t x;
     Float_t y;
     Float_t z;
-    Float_t px;
-    Float_t py;
-    Float_t pz;
+    // Float_t px;
+    // Float_t py;
+    // Float_t pz;
 };
 
-/*
- Container of TPC hit information.
-*/
+/**
+ * Container of TPC hit information.
+ */
 struct TPCHit_tt {
     Float_t x;
     Float_t y;
     Float_t z;
-    Float_t px;
-    Float_t py;
-    Float_t pz;
+    // Float_t px;
+    // Float_t py;
+    // Float_t pz;
     Float_t edep;
 };
 
-/*
- Container for particle information.
-*/
+/**
+ * Container for particle information.
+ */
 struct Particle_tt {
     // true info
     Int_t trackID;
@@ -72,17 +72,17 @@ struct Particle_tt {
     Float_t its_chi2_circle;
     Float_t its_chi2_helix;
     // -- first hit info, for debugging
-    Float_t its_fh_px;
-    Float_t its_fh_py;
-    Float_t its_fh_pt;
-    Float_t its_fh_pz;
-    Float_t its_fh_p;
+    // Float_t its_fh_px;
+    // Float_t its_fh_py;
+    // Float_t its_fh_pt;
+    // Float_t its_fh_pz;
+    // Float_t its_fh_p;
     // -- last hit info
-    Float_t its_lh_px;
-    Float_t its_lh_py;
-    Float_t its_lh_pt;
-    Float_t its_lh_pz;
-    Float_t its_lh_p;
+    // Float_t its_lh_px;
+    // Float_t its_lh_py;
+    // Float_t its_lh_pt;
+    // Float_t its_lh_pz;
+    // Float_t its_lh_p;
     // TPC
     std::vector<TPCHit_tt> tpc_hits;
     Float_t tpc_pt_rec;
@@ -93,52 +93,51 @@ struct Particle_tt {
     Float_t tpc_chi2_helix;
     Float_t tpc_dx;  // average distance between two hits in the TPC
     Float_t tpc_dE_dx;
+    Float_t dca_wrt_pv;
     // -- first hit info
-    Float_t tpc_fh_px;
-    Float_t tpc_fh_py;
-    Float_t tpc_fh_pt;
-    Float_t tpc_fh_pz;
-    Float_t tpc_fh_p;
+    // Float_t tpc_fh_px;
+    // Float_t tpc_fh_py;
+    // Float_t tpc_fh_pt;
+    // Float_t tpc_fh_pz;
+    // Float_t tpc_fh_p;
 };
 
-/*
- Container for event information.
-*/
+/**
+ * Container for event information.
+ */
 struct Event_tt {
     Int_t eventID;
     std::vector<Particle_tt> particles;
 };
 
 /*** MAIN ***/
-/*
-void ParseCSVFiles(Int_t job_n = 0, Int_t run_n = 0) {
 
-    // set input/output filenames -- hardcoded (not anymore :))
-
-    TString simdir = "/misc/alidata130/alice_u/kleine/software/ToyTPC/output/";
+void ParseCSVFiles(TString simdir, Int_t job_n = 0, Int_t run_n = 0) {
 
     TString input_traj_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_traj.csv", run_n);
     TString input_its_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_its.csv", run_n);
     TString input_tpc_file = simdir + Form("%02d/", job_n) + Form("run%02d/", run_n) + Form("run%02d_tpc.csv", run_n);
 
     TString output_filename = Form("run%02d_ana.root", run_n);
- */
-/*
-// temporary test snippet
-void ParseCSVFiles(Int_t run_n = 0) {
 
-    TString input_traj_file = Form("run%02d_traj_itest.csv", run_n);
-    TString input_its_file = Form("run%02d_its_itest.csv", run_n);
-    TString input_tpc_file = Form("run%02d_tpc_itest.csv", run_n);
-    TString output_filename = Form("run%02d_ana_itest.root", run_n);
- */
-// temporary test snippet
-void ParseCSVFiles(Int_t run_n = 0) {
+    /*
+    // temporary test snippet
+    void ParseCSVFiles(Int_t run_n = 0) {
 
-    TString input_traj_file = Form("event%01d_traj_sec.csv", run_n);
-    TString input_its_file = Form("event%01d_its_sec.csv", run_n);
-    TString input_tpc_file = Form("event%01d_tpc_sec.csv", run_n);
-    TString output_filename = Form("event%01d_ana_sec.root", run_n);
+        TString input_traj_file = Form("run%02d_traj_itest.csv", run_n);
+        TString input_its_file = Form("run%02d_its_itest.csv", run_n);
+        TString input_tpc_file = Form("run%02d_tpc_itest.csv", run_n);
+        TString output_filename = Form("run%02d_ana_itest.root", run_n);
+    */
+    /*
+    // temporary test snippet
+    void ParseCSVFiles(Int_t run_n = 0) {
+
+        TString input_traj_file = Form("event%01d_traj_sec.csv", run_n);
+        TString input_its_file = Form("event%01d_its_sec.csv", run_n);
+        TString input_tpc_file = Form("event%01d_tpc_sec.csv", run_n);
+        TString output_filename = Form("event%01d_ana_sec.root", run_n);
+    */
 
     // conversion factors
     const Double_t MeVToGeV = 1E-3;
@@ -253,15 +252,15 @@ void ParseCSVFiles(Int_t run_n = 0) {
         // convert the line into a TString, then split
         token = ((TString)line).Tokenize(",");
 
-        current_eventID = ((TString)(token->At(0)->GetName())).Atoi();            // [0] eventID
-        aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();               // [1] trackID
-        aux_its_hit.layerNb = ((TString)(token->At(2)->GetName())).Atoi();        // [2] layerNb
-        aux_its_hit.x = ((TString)(token->At(3)->GetName())).Atof();              // [3] x
-        aux_its_hit.y = ((TString)(token->At(4)->GetName())).Atof();              // [4] y
-        aux_its_hit.z = ((TString)(token->At(5)->GetName())).Atof();              // [5] z
-        aux_its_hit.px = ((TString)(token->At(6)->GetName())).Atof() * MeVToGeV;  // [6] px
-        aux_its_hit.py = ((TString)(token->At(7)->GetName())).Atof() * MeVToGeV;  // [7] py
-        aux_its_hit.pz = ((TString)(token->At(8)->GetName())).Atof() * MeVToGeV;  // [8] pz
+        current_eventID = ((TString)(token->At(0)->GetName())).Atoi();      // [0] eventID
+        aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();         // [1] trackID
+        aux_its_hit.layerNb = ((TString)(token->At(2)->GetName())).Atoi();  // [2] layerNb
+        aux_its_hit.x = ((TString)(token->At(3)->GetName())).Atof();        // [3] x
+        aux_its_hit.y = ((TString)(token->At(4)->GetName())).Atof();        // [4] y
+        aux_its_hit.z = ((TString)(token->At(5)->GetName())).Atof();        // [5] z
+        // aux_its_hit.px = ((TString)(token->At(6)->GetName())).Atof() * MeVToGeV;  // [6] px
+        // aux_its_hit.py = ((TString)(token->At(7)->GetName())).Atof() * MeVToGeV;  // [7] py
+        // aux_its_hit.pz = ((TString)(token->At(8)->GetName())).Atof() * MeVToGeV;  // [8] pz
 
         // get index from the track ID
         aux_index = part_index[current_eventID][aux_track_id];
@@ -297,15 +296,15 @@ void ParseCSVFiles(Int_t run_n = 0) {
         // convert the line into a TString, then split
         token = ((TString)line).Tokenize(",");
 
-        current_eventID = ((TString)(token->At(0)->GetName())).Atoi();            //   [0] eventID
-        aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();               //   [1] trackID
-        aux_tpc_hit.x = ((TString)(token->At(2)->GetName())).Atof();              //   [2] x
-        aux_tpc_hit.y = ((TString)(token->At(3)->GetName())).Atof();              //   [3] y
-        aux_tpc_hit.z = ((TString)(token->At(4)->GetName())).Atof();              //   [4] z
-        aux_tpc_hit.px = ((TString)(token->At(5)->GetName())).Atof() * MeVToGeV;  //   [5] px
-        aux_tpc_hit.py = ((TString)(token->At(6)->GetName())).Atof() * MeVToGeV;  //   [6] py
-        aux_tpc_hit.pz = ((TString)(token->At(7)->GetName())).Atof() * MeVToGeV;  //   [7] pz
-        aux_tpc_hit.edep = ((TString)(token->At(9)->GetName())).Atof();           //   [9] edep
+        current_eventID = ((TString)(token->At(0)->GetName())).Atoi();  //   [0] eventID
+        aux_track_id = ((TString)(token->At(1)->GetName())).Atoi();     //   [1] trackID
+        aux_tpc_hit.x = ((TString)(token->At(2)->GetName())).Atof();    //   [2] x
+        aux_tpc_hit.y = ((TString)(token->At(3)->GetName())).Atof();    //   [3] y
+        aux_tpc_hit.z = ((TString)(token->At(4)->GetName())).Atof();    //   [4] z
+        // aux_tpc_hit.px = ((TString)(token->At(5)->GetName())).Atof() * MeVToGeV;  //   [5] px
+        // aux_tpc_hit.py = ((TString)(token->At(6)->GetName())).Atof() * MeVToGeV;  //   [6] py
+        // aux_tpc_hit.pz = ((TString)(token->At(7)->GetName())).Atof() * MeVToGeV;  //   [7] pz
+        aux_tpc_hit.edep = ((TString)(token->At(9)->GetName())).Atof();  //   [9] edep
 
         // get index from the track ID
         aux_index = part_index[current_eventID][aux_track_id];
@@ -330,6 +329,11 @@ void ParseCSVFiles(Int_t run_n = 0) {
     Bool_t helixfit_state;
 
     Int_t n_its_hits, n_tpc_hits;
+
+    // needed for DCA calc.
+    Double_t pv[3] = {0., 0., 0.};
+    Double_t helix_params[5];
+    Double_t tmp_dca_wrt_pv;
 
     for (Event_tt &evt : Events) {
         for (Particle_tt &part : evt.particles) {
@@ -365,7 +369,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
                                           direction, chi2_helix);
 
                 /* Store results */
-
+                /*
                 part.its_fh_px = part.its_hits[0].px;
                 part.its_fh_py = part.its_hits[0].py;
                 part.its_fh_pt = TMath::Sqrt(part.its_fh_px * part.its_fh_px + part.its_fh_py * part.its_fh_py);
@@ -377,7 +381,7 @@ void ParseCSVFiles(Int_t run_n = 0) {
                 part.its_lh_pt = TMath::Sqrt(part.its_lh_px * part.its_lh_px + part.its_lh_py * part.its_lh_py);
                 part.its_lh_pz = part.its_hits[n_its_hits - 1].pz;
                 part.its_lh_p = TMath::Sqrt(part.its_lh_pt * part.its_lh_pt + part.its_lh_pz * part.its_lh_pz);
-
+                */
                 part.its_pt_rec = -666;
                 part.its_chi2_circle = -666;
 
@@ -427,19 +431,12 @@ void ParseCSVFiles(Int_t run_n = 0) {
                                           direction, chi2_helix);
 
                 if (helixfit_state) {
-                    Double_t pv[3] = {0., 0., 0.};
-                    Double_t helix_params[5] = {x_c, y_c, radius, helix_omega, helix_phi};
-                    TVector3 pca_wrt_pv(0., 0., 0.);
-                    Double_t sol;
-                    Double_t dca_wrt_pv = CalculatePointToHelixDCA(pv, helix_params, sol, pca_wrt_pv);
-                    Double_t helix_eval_x = radius * TMath::Cos(helix_omega * 0. + helix_phi) + x_c;
-                    Double_t helix_eval_y = radius * TMath::Sin(helix_omega * 0. + helix_phi) + y_c;
-                    Double_t helix_eval_z = helix_omega * 0.;
-                    printf(
-                        "PDG: %i, IsPrimary: %i, helix evaluated at (z=0) : (%.3f, %.3f, %.3f), DCA wrt PV: %.3f, PCA wrt PV: (%.3f, %.3f, "
-                        "%.3f)\n",
-                        part.PDGcode, (Int_t)part.is_primary, helix_eval_x, helix_eval_y, helix_eval_z, dca_wrt_pv, pca_wrt_pv.X(),
-                        pca_wrt_pv.Y(), pca_wrt_pv.Z());
+                    helix_params[0] = x_c;
+                    helix_params[1] = y_c;
+                    helix_params[2] = radius;
+                    helix_params[3] = helix_omega;
+                    helix_params[4] = helix_phi;
+                    tmp_dca_wrt_pv = CalculatePointToHelixDCA(pv, helix_params);
                 }
 
                 /* Compute the differential energy loss of the particle */
@@ -448,13 +445,13 @@ void ParseCSVFiles(Int_t run_n = 0) {
                 EnergyLoss(n_tpc_hits, tpc_edep, tpc_x, tpc_y, tpc_z, dE_dx, dx);
 
                 /* Store results */
-
+                /*
                 part.tpc_fh_px = part.tpc_hits[0].px;
                 part.tpc_fh_py = part.tpc_hits[0].py;
                 part.tpc_fh_pt = TMath::Sqrt(part.tpc_fh_px * part.tpc_fh_px + part.tpc_fh_py * part.tpc_fh_py);
                 part.tpc_fh_pz = part.tpc_hits[0].pz;
                 part.tpc_fh_p = TMath::Sqrt(part.tpc_fh_pt * part.tpc_fh_pt + part.tpc_fh_pz * part.tpc_fh_pz);
-
+                */
                 part.tpc_pt_rec = -666;
                 part.tpc_chi2_circle = -666;
 
@@ -467,12 +464,14 @@ void ParseCSVFiles(Int_t run_n = 0) {
                 part.tpc_p_rec = -666;
                 part.tpc_charge_rec = -666;
                 part.tpc_chi2_helix = -666;
+                part.dca_wrt_pv = -666;
 
                 if (circlefit_state && helixfit_state) {
                     part.tpc_pz_rec = direction * part.tpc_pt_rec * TMath::Abs(TMath::Tan(angle)) * GeVToMeV;
                     part.tpc_p_rec = TMath::Sqrt(part.tpc_pt_rec * part.tpc_pt_rec + part.tpc_pz_rec * part.tpc_pz_rec);
                     part.tpc_charge_rec = charge;
                     part.tpc_chi2_helix = chi2_helix;
+                    part.dca_wrt_pv = tmp_dca_wrt_pv;
                 }
 
                 part.tpc_dx = dx;
@@ -508,16 +507,16 @@ void ParseCSVFiles(Int_t run_n = 0) {
     std::vector<Float_t> aux_ITS_charge_rec;
     std::vector<Float_t> aux_ITS_chi2_circle;
     std::vector<Float_t> aux_ITS_chi2_helix;
-    std::vector<Float_t> aux_ITS_FH_Px;
-    std::vector<Float_t> aux_ITS_FH_Py;
-    std::vector<Float_t> aux_ITS_FH_Pt;
-    std::vector<Float_t> aux_ITS_FH_Pz;
-    std::vector<Float_t> aux_ITS_FH_P;
-    std::vector<Float_t> aux_ITS_LH_Px;
-    std::vector<Float_t> aux_ITS_LH_Py;
-    std::vector<Float_t> aux_ITS_LH_Pt;
-    std::vector<Float_t> aux_ITS_LH_Pz;
-    std::vector<Float_t> aux_ITS_LH_P;
+    // std::vector<Float_t> aux_ITS_FH_Px;
+    // std::vector<Float_t> aux_ITS_FH_Py;
+    // std::vector<Float_t> aux_ITS_FH_Pt;
+    // std::vector<Float_t> aux_ITS_FH_Pz;
+    // std::vector<Float_t> aux_ITS_FH_P;
+    // std::vector<Float_t> aux_ITS_LH_Px;
+    // std::vector<Float_t> aux_ITS_LH_Py;
+    // std::vector<Float_t> aux_ITS_LH_Pt;
+    // std::vector<Float_t> aux_ITS_LH_Pz;
+    // std::vector<Float_t> aux_ITS_LH_P;
     std::vector<Int_t> aux_nTPChits;
     std::vector<Float_t> aux_TPC_Pt_rec;
     std::vector<Float_t> aux_TPC_Pz_rec;
@@ -527,11 +526,12 @@ void ParseCSVFiles(Int_t run_n = 0) {
     std::vector<Float_t> aux_TPC_chi2_helix;
     std::vector<Float_t> aux_TPC_dx;
     std::vector<Float_t> aux_TPC_dEdx;
-    std::vector<Float_t> aux_TPC_FH_Px;
-    std::vector<Float_t> aux_TPC_FH_Py;
-    std::vector<Float_t> aux_TPC_FH_Pt;
-    std::vector<Float_t> aux_TPC_FH_Pz;
-    std::vector<Float_t> aux_TPC_FH_P;
+    std::vector<Float_t> aux_DCA_wrt_PV;
+    // std::vector<Float_t> aux_TPC_FH_Px;
+    // std::vector<Float_t> aux_TPC_FH_Py;
+    // std::vector<Float_t> aux_TPC_FH_Pt;
+    // std::vector<Float_t> aux_TPC_FH_Pz;
+    // std::vector<Float_t> aux_TPC_FH_P;
 
     // set tree branches
     output_tree->Branch("eventID", &aux_eventID);
@@ -553,16 +553,16 @@ void ParseCSVFiles(Int_t run_n = 0) {
     output_tree->Branch("ITS_charge_rec", &aux_ITS_charge_rec);
     output_tree->Branch("ITS_chi2_circle", &aux_ITS_chi2_circle);
     output_tree->Branch("ITS_chi2_helix", &aux_ITS_chi2_helix);
-    output_tree->Branch("ITS_FH_Px", &aux_ITS_FH_Px);
-    output_tree->Branch("ITS_FH_Py", &aux_ITS_FH_Py);
-    output_tree->Branch("ITS_FH_Pt", &aux_ITS_FH_Pt);
-    output_tree->Branch("ITS_FH_Pz", &aux_ITS_FH_Pz);
-    output_tree->Branch("ITS_FH_P", &aux_ITS_FH_P);
-    output_tree->Branch("ITS_LH_Px", &aux_ITS_LH_Px);
-    output_tree->Branch("ITS_LH_Py", &aux_ITS_LH_Py);
-    output_tree->Branch("ITS_LH_Pt", &aux_ITS_LH_Pt);
-    output_tree->Branch("ITS_LH_Pz", &aux_ITS_LH_Pz);
-    output_tree->Branch("ITS_LH_P", &aux_ITS_LH_P);
+    // output_tree->Branch("ITS_FH_Px", &aux_ITS_FH_Px);
+    // output_tree->Branch("ITS_FH_Py", &aux_ITS_FH_Py);
+    // output_tree->Branch("ITS_FH_Pt", &aux_ITS_FH_Pt);
+    // output_tree->Branch("ITS_FH_Pz", &aux_ITS_FH_Pz);
+    // output_tree->Branch("ITS_FH_P", &aux_ITS_FH_P);
+    // output_tree->Branch("ITS_LH_Px", &aux_ITS_LH_Px);
+    // output_tree->Branch("ITS_LH_Py", &aux_ITS_LH_Py);
+    // output_tree->Branch("ITS_LH_Pt", &aux_ITS_LH_Pt);
+    // output_tree->Branch("ITS_LH_Pz", &aux_ITS_LH_Pz);
+    // output_tree->Branch("ITS_LH_P", &aux_ITS_LH_P);
     output_tree->Branch("nTPChits", &aux_nTPChits);
     output_tree->Branch("TPC_Pt_rec", &aux_TPC_Pt_rec);
     output_tree->Branch("TPC_Pz_rec", &aux_TPC_Pz_rec);
@@ -572,11 +572,12 @@ void ParseCSVFiles(Int_t run_n = 0) {
     output_tree->Branch("TPC_chi2_helix", &aux_TPC_chi2_helix);
     output_tree->Branch("TPC_dx", &aux_TPC_dx);
     output_tree->Branch("TPC_dEdx", &aux_TPC_dEdx);
-    output_tree->Branch("TPC_FH_Px", &aux_TPC_FH_Px);
-    output_tree->Branch("TPC_FH_Py", &aux_TPC_FH_Py);
-    output_tree->Branch("TPC_FH_Pt", &aux_TPC_FH_Pt);
-    output_tree->Branch("TPC_FH_Pz", &aux_TPC_FH_Pz);
-    output_tree->Branch("TPC_FH_P", &aux_TPC_FH_P);
+    output_tree->Branch("DCA_wrt_PV", &aux_DCA_wrt_PV);
+    // output_tree->Branch("TPC_FH_Px", &aux_TPC_FH_Px);
+    // output_tree->Branch("TPC_FH_Py", &aux_TPC_FH_Py);
+    // output_tree->Branch("TPC_FH_Pt", &aux_TPC_FH_Pt);
+    // output_tree->Branch("TPC_FH_Pz", &aux_TPC_FH_Pz);
+    // output_tree->Branch("TPC_FH_P", &aux_TPC_FH_P);
 
     for (Event_tt &evt : Events) {
 
@@ -613,16 +614,16 @@ void ParseCSVFiles(Int_t run_n = 0) {
             aux_ITS_charge_rec.push_back(part.its_charge_rec);
             aux_ITS_chi2_circle.push_back(part.its_chi2_circle);
             aux_ITS_chi2_helix.push_back(part.its_chi2_helix);
-            aux_ITS_FH_Px.push_back(part.its_fh_px);
-            aux_ITS_FH_Py.push_back(part.its_fh_py);
-            aux_ITS_FH_Pt.push_back(part.its_fh_pt);
-            aux_ITS_FH_Pz.push_back(part.its_fh_pz);
-            aux_ITS_FH_P.push_back(part.its_fh_p);
-            aux_ITS_LH_Px.push_back(part.its_lh_px);
-            aux_ITS_LH_Py.push_back(part.its_lh_py);
-            aux_ITS_LH_Pt.push_back(part.its_lh_pt);
-            aux_ITS_LH_Pz.push_back(part.its_lh_pz);
-            aux_ITS_LH_P.push_back(part.its_lh_p);
+            // aux_ITS_FH_Px.push_back(part.its_fh_px);
+            // aux_ITS_FH_Py.push_back(part.its_fh_py);
+            // aux_ITS_FH_Pt.push_back(part.its_fh_pt);
+            // aux_ITS_FH_Pz.push_back(part.its_fh_pz);
+            // aux_ITS_FH_P.push_back(part.its_fh_p);
+            // aux_ITS_LH_Px.push_back(part.its_lh_px);
+            // aux_ITS_LH_Py.push_back(part.its_lh_py);
+            // aux_ITS_LH_Pt.push_back(part.its_lh_pt);
+            // aux_ITS_LH_Pz.push_back(part.its_lh_pz);
+            // aux_ITS_LH_P.push_back(part.its_lh_p);
             aux_nTPChits.push_back((Int_t)part.tpc_hits.size());
             aux_TPC_Pt_rec.push_back(part.tpc_pt_rec);
             aux_TPC_Pz_rec.push_back(part.tpc_pz_rec);
@@ -632,11 +633,12 @@ void ParseCSVFiles(Int_t run_n = 0) {
             aux_TPC_chi2_helix.push_back(part.tpc_chi2_helix);
             aux_TPC_dx.push_back(part.tpc_dx);
             aux_TPC_dEdx.push_back(part.tpc_dE_dx);
-            aux_TPC_FH_Px.push_back(part.tpc_fh_px);
-            aux_TPC_FH_Py.push_back(part.tpc_fh_py);
-            aux_TPC_FH_Pt.push_back(part.tpc_fh_pt);
-            aux_TPC_FH_Pz.push_back(part.tpc_fh_pz);
-            aux_TPC_FH_P.push_back(part.tpc_fh_p);
+            aux_DCA_wrt_PV.push_back(part.dca_wrt_pv);
+            // aux_TPC_FH_Px.push_back(part.tpc_fh_px);
+            // aux_TPC_FH_Py.push_back(part.tpc_fh_py);
+            // aux_TPC_FH_Pt.push_back(part.tpc_fh_pt);
+            // aux_TPC_FH_Pz.push_back(part.tpc_fh_pz);
+            // aux_TPC_FH_P.push_back(part.tpc_fh_p);
         }
 
         // at the end of the event
@@ -661,16 +663,16 @@ void ParseCSVFiles(Int_t run_n = 0) {
         aux_ITS_charge_rec.clear();
         aux_ITS_chi2_circle.clear();
         aux_ITS_chi2_helix.clear();
-        aux_ITS_FH_Px.clear();
-        aux_ITS_FH_Py.clear();
-        aux_ITS_FH_Pt.clear();
-        aux_ITS_FH_Pz.clear();
-        aux_ITS_FH_P.clear();
-        aux_ITS_LH_Px.clear();
-        aux_ITS_LH_Py.clear();
-        aux_ITS_LH_Pt.clear();
-        aux_ITS_LH_Pz.clear();
-        aux_ITS_LH_P.clear();
+        // aux_ITS_FH_Px.clear();
+        // aux_ITS_FH_Py.clear();
+        // aux_ITS_FH_Pt.clear();
+        // aux_ITS_FH_Pz.clear();
+        // aux_ITS_FH_P.clear();
+        // aux_ITS_LH_Px.clear();
+        // aux_ITS_LH_Py.clear();
+        // aux_ITS_LH_Pt.clear();
+        // aux_ITS_LH_Pz.clear();
+        // aux_ITS_LH_P.clear();
         aux_nTPChits.clear();
         aux_TPC_Pt_rec.clear();
         aux_TPC_Pz_rec.clear();
@@ -680,11 +682,12 @@ void ParseCSVFiles(Int_t run_n = 0) {
         aux_TPC_chi2_helix.clear();
         aux_TPC_dx.clear();
         aux_TPC_dEdx.clear();
-        aux_TPC_FH_Px.clear();
-        aux_TPC_FH_Py.clear();
-        aux_TPC_FH_Pt.clear();
-        aux_TPC_FH_Pz.clear();
-        aux_TPC_FH_P.clear();
+        aux_DCA_wrt_PV.clear();
+        // aux_TPC_FH_Px.clear();
+        // aux_TPC_FH_Py.clear();
+        // aux_TPC_FH_Pt.clear();
+        // aux_TPC_FH_Pz.clear();
+        // aux_TPC_FH_P.clear();
     }
 
     output_tree->Write();

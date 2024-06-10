@@ -2,9 +2,9 @@
 
 #include "TMath.h"
 
-/*
-  Determine the differential energy loss of a particle with a certain momentum.
-*/
+/**
+ * Determine the differential energy loss of a particle with a certain momentum.
+ */
 Int_t EnergyLoss(Int_t N, Double_t *depositedEnergy, Double_t *x, Double_t *y, Double_t *z, Double_t &dE_dx, Double_t &dxaverage) {
 
     Double_t dx[N - 1];

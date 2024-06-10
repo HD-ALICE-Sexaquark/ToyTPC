@@ -2,9 +2,9 @@
 
 #include "TMath.h"
 
-/*
-  Minimisation function computing the sum of squares of residuals looping at the graph points.
-*/
+/**
+ * Minimisation function computing the sum of squares of residuals looping at the graph points.
+ */
 Double_t CircleMinFcn(Int_t N, Double_t *x, Double_t *y, Double_t x_c, Double_t y_c, Double_t r) {
     Double_t dr;
     Double_t res = 0.;  // residual
@@ -15,13 +15,15 @@ Double_t CircleMinFcn(Int_t N, Double_t *x, Double_t *y, Double_t x_c, Double_t 
     return res;
 }
 
-/*
- A "new" method of making a least-squares circle fit to a set of points.
- - Input: `x`, `y` arrays of length `N`
- - Output: `x_c`, `y_c`, `r`
- - Return: `0` if successful, `1` if determinant is too small
- Reference: https://dtcenter.org/community-code/model-evaluation-tools-met/documentation
-*/
+/**
+ * An analytical method to least-squares fit a circle to a set of points.
+ *
+ * - Input: `x`, `y` arrays of length `N`
+ * - Output: `x_c`, `y_c`, `r`
+ * - Return: `kFALSE` if determinant is too small, `kTRUE` if successful
+ *
+ * Reference: https://dtcenter.org/community-code/model-evaluation-tools-met/documentation
+ */
 Bool_t LeastSquaresCircleFit(Int_t N, Double_t *x, Double_t *y, Double_t &x_c, Double_t &y_c, Double_t &r, Double_t &chi2) {
 
     /* Get average */
