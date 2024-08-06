@@ -1,9 +1,8 @@
 #!/bin/bash
 
-   ###
-  ###  Merge output CSV files
- ##  by adding the event number as an additional column
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+####### ###### #### ### ## #
+#  Merge output CSV files by adding the event number as an additional column
+### ## #
 
 RUN_DIR=$1
 RUN_STR=${RUN_DIR##*/}

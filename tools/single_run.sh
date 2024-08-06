@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ -z ${OUTPUT_DIR} || -z ${JOB_DIR} || -z ${N_EVENTS_PER_RUN} ]]; then
+if [[ -z ${SIM_DIR} || -z ${OUTPUT_DIR} || -z ${MAG_FIELD} || -z ${JOB_DIR} || -z ${N_EVENTS_PER_RUN} || -z ${GEANT4_NUM_THREADS} ]]; then
     echo "single_run.sh :: ERROR :: options must be defined!"
     exit 1
 fi
@@ -43,7 +43,7 @@ for ((event=0; event < ${N_EVENTS_PER_RUN}; event++)); do
     TPC_CSV=event${event_id}_tpc.csv
     RECO_LOG=event${event_id}_reco.log
     echo "single_run.sh :: reconstructing event ${event_id}"
-    ./main ${MC_CSV} ${TRAJ_CSV} ${ITS_CSV} ${TPC_CSV} &> ${RECO_LOG}
+    ./main ${MC_CSV} ${TRAJ_CSV} ${ITS_CSV} ${TPC_CSV} ${MAG_FIELD} &> ${RECO_LOG}
 done
 cat event*_reco.log > ${STR_RUN}_reco.log
 rm event*_reco.log
@@ -56,3 +56,4 @@ mv -v ${tmp_dir}_mc.csv ${STR_RUN}_mc.csv
 mv -v ${tmp_dir}_traj.csv ${STR_RUN}_traj.csv
 mv -v ${tmp_dir}_its.csv ${STR_RUN}_its.csv
 mv -v ${tmp_dir}_tpc.csv ${STR_RUN}_tpc.csv
+echo "single_run.sh :: finished merging files"
