@@ -23,6 +23,16 @@ cp ${SIM_DIR}/tools/merge_files.sh ${RUN_DIR}
 
 cd ${RUN_DIR}
 
+# print run info
+RUN_LOG=${STR_RUN}_cfg.log
+echo "${STR_RUN}" > ${RUN_LOG}
+echo ">> SIM_DIR               = ${SIM_DIR}" >> ${RUN_LOG}
+echo ">> OUTPUT_DIR            = ${OUTPUT_DIR}" >> ${RUN_LOG}
+echo ">> N_EVENTS_PER_RUN      = ${N_EVENTS_PER_RUN}" >> ${RUN_LOG}
+echo ">> GEANT4_NUM_THREADS    = ${GEANT4_NUM_THREADS}" >> ${RUN_LOG}
+echo ">> MAG_FIELD             = ${MAG_FIELD}" >> ${RUN_LOG}
+echo ">> TRIGGER_CONDITION_OFF = ${TRIGGER_CONDITION_OFF}" >> ${RUN_LOG}
+
 # run injector
 for ((event=0; event < ${N_EVENTS_PER_RUN}; event++)); do
     event_id=$(printf "%03d" ${event})
@@ -42,18 +52,16 @@ for ((event=0; event < ${N_EVENTS_PER_RUN}; event++)); do
     ITS_CSV=event${event_id}_its.csv
     TPC_CSV=event${event_id}_tpc.csv
     RECO_LOG=event${event_id}_reco.log
+    TRIGGER_CONDITION=1
+    if [[ ${TRIGGER_CONDITION_OFF} -eq 1 ]]; then
+        TRIGGER_CONDITION=0
+    fi
     echo "single_run.sh :: reconstructing event ${event_id}"
-    ./main ${MC_CSV} ${TRAJ_CSV} ${ITS_CSV} ${TPC_CSV} ${MAG_FIELD} &> ${RECO_LOG}
+    ./main ${MC_CSV} ${TRAJ_CSV} ${ITS_CSV} ${TPC_CSV} ${TRIGGER_CONDITION} ${MAG_FIELD} &> ${RECO_LOG}
 done
 cat event*_reco.log > ${STR_RUN}_reco.log
 rm event*_reco.log
 
-# merge csv files (note to self: can be improved...)
-./merge_files.sh $(readlink -f .)
-tmp_dir=$(readlink -f .)
-tmp_dir=${tmp_dir##*/}
-mv -v ${tmp_dir}_mc.csv ${STR_RUN}_mc.csv
-mv -v ${tmp_dir}_traj.csv ${STR_RUN}_traj.csv
-mv -v ${tmp_dir}_its.csv ${STR_RUN}_its.csv
-mv -v ${tmp_dir}_tpc.csv ${STR_RUN}_tpc.csv
+# merge csv files
+./merge_files.sh
 echo "single_run.sh :: finished merging files"

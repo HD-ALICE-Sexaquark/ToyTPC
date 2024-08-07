@@ -2,9 +2,10 @@
 
 ####### ###### #### ### ## #
 #  Merge output CSV files by adding the event number as an additional column
+ # IMPORTANT: has to be executed in the same directory where the files are located!
 ### ## #
 
-RUN_DIR=$1
+RUN_DIR=$(readlink -f .)
 RUN_STR=${RUN_DIR##*/}
 
 FILE_TYPES_ARR=("mc" "traj" "its" "tpc")
