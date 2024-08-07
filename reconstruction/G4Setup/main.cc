@@ -53,6 +53,7 @@ std::string its_file = "";
 std::string tpc_file = "";
 G4int pdg_single_part = 0;
 G4float py_single_part = 0.;
+bool cli_trigger_condition = false;
 
 int main(int argc, char** argv) {
 
@@ -68,17 +69,18 @@ int main(int argc, char** argv) {
 
     if (argc == 1) {
         ui = new G4UIExecutive(argc, argv);
-    } else if (argc == 6) {
+    } else if (argc == 7) {
         input_filename = argv[1];
         output_filename_traj = argv[2];
         output_filename_ITS = argv[3];
         output_filename_TPC = argv[4];
-        magfield_z = std::stof(argv[5]) * tesla;
+        cli_trigger_condition = std::stoi(argv[5]);
+        magfield_z = std::stof(argv[6]) * tesla;
     } else {
         // clang-format off
         G4cerr << "main.cc :: ERROR: incorrect number of arguments." << G4endl;
         G4cerr << "main.cc ::        -> for command-line mode, you need exactly four arguments:" << G4endl;
-        G4cerr << "main.cc ::           ./main <input_filename> <output_filename_traj> <output_filename_ITS> <output_filename_TPC> <magfield_z in tesla>" << G4endl;
+        G4cerr << "main.cc ::           ./main <input_filename> <output_filename_traj> <output_filename_ITS> <output_filename_TPC> <trigger_condition 1/0> <magfield_z in tesla>" << G4endl;
         G4cerr << "main.cc ::        -> for graphic-interactive mode, you need no arguments:" << G4endl;
         G4cerr << "main.cc ::           ./main" << G4endl;
         return 1;
@@ -87,11 +89,12 @@ int main(int argc, char** argv) {
 
     // (debug)
     G4cout << "main.cc :: initiating..." << G4endl;
-    G4cout << "main.cc :: >> input_filename       = " << input_filename << G4endl;
-    G4cout << "main.cc :: >> output_filename_traj = " << output_filename_traj << G4endl;
-    G4cout << "main.cc :: >> output_filename_ITS  = " << output_filename_ITS << G4endl;
-    G4cout << "main.cc :: >> output_filename_TPC  = " << output_filename_TPC << G4endl;
-    G4cout << "main.cc :: >> magfield_z           = " << magfield_z / tesla << " tesla" << G4endl;
+    G4cout << "main.cc :: >> input_filename        = " << input_filename << G4endl;
+    G4cout << "main.cc :: >> output_filename_traj  = " << output_filename_traj << G4endl;
+    G4cout << "main.cc :: >> output_filename_ITS   = " << output_filename_ITS << G4endl;
+    G4cout << "main.cc :: >> output_filename_TPC   = " << output_filename_TPC << G4endl;
+    G4cout << "main.cc :: >> cli_trigger_condition = " << cli_trigger_condition << G4endl;
+    G4cout << "main.cc :: >> magfield_z            = " << magfield_z / tesla << " tesla" << G4endl;
 
     // optional: choose a different random engine...
     // G4Random::setTheEngine(new CLHEP::MTwistEngine);
@@ -142,15 +145,14 @@ int main(int argc, char** argv) {
         UImanager->ApplyCommand("/ALICE/its_file " + output_filename_ITS);
         UImanager->ApplyCommand("/ALICE/tpc_file " + output_filename_TPC);
         UImanager->ApplyCommand("/globalField/setValue 0 0 " + std::to_string(magfield_z / tesla) + " tesla");
-        for (G4int i = 0; i < nAttempts; i++) {
+        G4int nAttempt_i = 0;
+        do {
             UImanager->ApplyCommand("/run/beamOn " + nProcesses);
             run = runManager ? runManager->GetCurrentRun() : nullptr;
             events = run ? run->GetEventVector() : nullptr;
             nKeptEvents = events ? (G4int)events->size() : 0;
-            if (nKeptEvents) {
-                break;
-            }
-        }
+            nAttempt_i++;
+        } while (nAttempt_i < nAttempts && nKeptEvents < 1 && cli_trigger_condition);
     } else {
         // graphical mode
         UImanager->ApplyCommand("/control/execute init_vis.mac");

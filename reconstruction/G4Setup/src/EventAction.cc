@@ -41,6 +41,7 @@
 extern std::string traj_file;
 extern std::string its_file;
 extern std::string tpc_file;
+extern bool cli_trigger_condition;
 
 namespace {
 
@@ -298,16 +299,15 @@ void EventAction::EndOfEventAction(const G4Event* event) {
 
     /* We require all of the primaries to obey at least one condition */
 
-    G4int trigger_condition = std::all_of(primaries_trackID.begin(), primaries_trackID.end(),
-                                          [&](G4int trackID) {                                     //
-                                              return LoopsInTPC[trackID] || KinkInTPC[trackID] ||  //
-                                                     StopsMidTPC[trackID] || CrossesTPC[trackID] || KinkBeforeTPC[trackID];
-                                          });
+    G4int fulfills_trigger_condition = std::all_of(primaries_trackID.begin(), primaries_trackID.end(),
+                                                   [&](G4int trackID) {                                     //
+                                                       return LoopsInTPC[trackID] || KinkInTPC[trackID] ||  //
+                                                              StopsMidTPC[trackID] || CrossesTPC[trackID] || KinkBeforeTPC[trackID];
+                                                   });
 
-    if (trigger_condition) {
+    if (!cli_trigger_condition || fulfills_trigger_condition) {
         StoreEvent(event);
         eventManager->KeepTheCurrentEvent();
-        // (debug)
         G4cout << "event is stored!" << G4endl;
     }
 }
